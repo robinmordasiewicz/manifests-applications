@@ -36,7 +36,7 @@ spec:
     nodeSelector:
       accelerator: nvidia
       agentpool: gpu
-      nvidia.com/gpu.present: true
+      nvidia.com/gpu.present: "true"
     ollama:
       gpu:
         enabled: true
