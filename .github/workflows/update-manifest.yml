@@ -42,5 +42,5 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Increment version to ${{ env.VERSION }}"
-            git push -f origin main:version
+            git push -f origin main:docs-version
           fi
