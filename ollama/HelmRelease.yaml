@@ -1,0 +1,57 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ollama
+  namespace: cluster-config
+spec:
+  targetNamespace: application
+  releaseName: ollama
+  chart:
+    spec:
+      chart: ollama
+      sourceRef:
+        kind: HelmRepository
+        name: ollama
+        namespace: cluster-config
+  interval: 10m0s
+  install:
+    timeout: 20m
+    remediation:
+      retries: 5
+  upgrade:
+    timeout: 20m
+  values:
+    runtimeClass: nvidia
+    extraEnv:
+      - name: OLLAMA_KEEP_ALIVE
+        value: "-1"
+    resources:
+      limits:
+        nvidia.com/gpu: "1"
+      requests:
+        nvidia.com/gpu: "1"
+    image:
+      tag: "latest"
+    nodeSelector:
+      accelerator: nvidia
+      agentpool: gpu
+      nvidia.com/gpu.present: true
+    ollama:
+      gpu:
+        enabled: true
+      models:
+        - nomic-embed-text
+        - llama3.2:3b
+    persistentVolume:
+      enabled: true
+      size: 50Gi
+    service:
+      type: NodePort
+    tolerations: 
+      - key: "nvidia.com/gpu"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
