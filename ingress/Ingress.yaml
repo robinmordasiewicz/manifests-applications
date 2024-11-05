@@ -20,14 +20,16 @@ metadata:
   }
 spec:
   ingressClassName: fwb-ingress-controller
-  defaultBackend:
-    service:
-      name: docs
-      port:
-        number: 8080
   rules:
   - http:
       paths:
+      - path: /cloud
+        pathType: Prefix
+        backend:
+          service:
+            name: docs
+            port:
+              number: 8080
       - path: /video
         pathType: Prefix
         backend:
