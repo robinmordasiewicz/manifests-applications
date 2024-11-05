@@ -56,6 +56,7 @@ spec:
       - key: "CriticalAddonsOnly"
         operator: "Exists"
     ingress:
+      enabled: true
       className: "fwb-ingress-controller"
       annotations: {
         fortiweb-ip: "10.0.0.4",
