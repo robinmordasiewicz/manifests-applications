@@ -23,6 +23,27 @@ spec:
   rules:
   - http:
       paths:
+      - path: /ot
+        pathType: Prefix
+        backend:
+          service:
+            name: docs
+            port:
+              number: 8080
+      - path: /sase
+        pathType: Prefix
+        backend:
+          service:
+            name: docs
+            port:
+              number: 8080
+      - path: /secops
+        pathType: Prefix
+        backend:
+          service:
+            name: docs
+            port:
+              number: 8080
       - path: /cloud
         pathType: Prefix
         backend:
