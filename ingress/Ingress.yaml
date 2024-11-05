@@ -5,18 +5,18 @@ metadata:
   name: ingress
   namespace: application
   annotations: {
-    "fortiweb-ip" : "10.0.0.4",
-    "fortiweb-login" : "fortiweb-login-secret",
-    "fortiweb-port": "8443",
-    "fortiweb-ctrl-log" : "disable",
-    "virtual-server-ip" : "10.0.0.5",
-    "virtual-server-addr-type" : "ipv4",
-    "virtual-server-interface" : "port1",
-    "server-policy-web-protection-profile" : "ollama",
-    "server-policy-https-service" : "HTTPS",
-    "server-policy-http-service" : "HTTP",
-    "server-policy-syn-cookie" : "enable",
-    "server-policy-http-to-https" : "disable"
+    fortiweb-ip: "10.0.0.4"
+    fortiweb-login: "fortiweb-login-secret"
+    fortiweb-port: "8443"
+    fortiweb-ctrl-log: "disable"
+    virtual-server-ip: "10.0.0.5"
+    virtual-server-addr-type: "ipv4"
+    virtual-server-interface: "port1"
+    server-policy-web-protection-profile: "ollama"
+    server-policy-https-service: "HTTPS"
+    server-policy-http-service: "HTTP"
+    server-policy-syn-cookie: "enable"
+    server-policy-http-to-https: "disable"
   }
 spec:
   ingressClassName: fwb-ingress-controller
@@ -28,6 +28,13 @@ spec:
   rules:
   - http:
       paths:
+      - path: /index.html
+        pathType: Exact
+        backend:
+          service:
+            name: docs
+            port:
+              number: 8080
       - path: /ot
         pathType: Prefix
         backend:
