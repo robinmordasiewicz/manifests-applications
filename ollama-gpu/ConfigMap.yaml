@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-init-script
+data:
+  init-script.sh": |
+    #!/bin/bash
+
+    echo "Hi!"
+    echo "My name is"
+    echo "What?"
+    echo "My name is"
+    echo "Who?"
+    echo "My name is"
+    echo "Chika-chika"
+    echo "Slim Shady"

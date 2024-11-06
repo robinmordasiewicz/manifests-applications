@@ -73,3 +73,16 @@ spec:
       }
     hosts:
       - "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
+    initContainers:
+      - name: init-script-runner
+        image: busybox:latest  # Replace with appropriate image if needed
+        command: ["/bin/sh", "-c"]
+        args:
+          - "/scripts/init-script.sh"
+        volumeMounts:
+          - name: init-script-volume
+            mountPath: /scripts
+    volumes:
+      - name: init-script-volume
+        configMap:
+          name: ollama-init-script
