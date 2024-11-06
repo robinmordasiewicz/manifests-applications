@@ -5,7 +5,7 @@ metadata:
   namespace: application
 data:
   init-script.sh: |
-    #!/bin/bash
+    #!/bin/sh
 
     echo "Hi!"
     echo "My name is"
