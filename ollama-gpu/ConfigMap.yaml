@@ -4,7 +4,7 @@ metadata:
   name: ollama-init-script
   namespace: application
 data:
-  init-script.sh": |
+  init-script.sh: |
     #!/bin/bash
 
     echo "Hi!"
