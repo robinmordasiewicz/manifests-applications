@@ -75,7 +75,7 @@ spec:
       - "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
     initContainers:
       - name: init-script-runner
-        image: busybox:latest  # Replace with appropriate image if needed
+        image: alpine/k8s:1.30.6
         command: ["/bin/sh", "-c"]
         args:
           - "/scripts/init-script.sh"
