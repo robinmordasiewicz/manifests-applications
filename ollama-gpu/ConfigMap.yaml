@@ -6,12 +6,4 @@ metadata:
 data:
   init-script.sh: |
     #!/bin/sh
-
-    echo "Hi!"
-    echo "My name is"
-    echo "What?"
-    echo "My name is"
-    echo "Who?"
-    echo "My name is"
-    echo "Chika-chika"
-    echo "Slim Shady"
+    echo "Hello World"
