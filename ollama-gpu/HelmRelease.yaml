@@ -71,5 +71,5 @@ spec:
         server-policy-syn-cookie: "enable",
         server-policy-http-to-https: "disable"
       }
-      hosts:
-        - "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
+    hosts:
+      - "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
