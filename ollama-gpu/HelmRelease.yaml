@@ -86,3 +86,4 @@ spec:
       - name: init-script-volume
         configMap:
           name: ollama-init-script
+          defaultMode: 0755
