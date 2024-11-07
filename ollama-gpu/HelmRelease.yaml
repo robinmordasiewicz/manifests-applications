@@ -76,12 +76,12 @@ spec:
     initContainers:
       - name: init-script-runner
         image: alpine/k8s:1.30.6
-        command: ["/bin/sh", "-c", "ls -la /scripts/"]
+        command: ["/bin/sh", "-c", "ls -al /scripts"]
         #args:
         #  - "/scripts/init-script.sh"
-        #volumeMounts:
-        #  - name: init-script-volume
-        #    mountPath: /scripts
+        volumeMounts:
+          - name: init-script-volume
+            mountPath: /scripts
     volumes:
       - name: init-script-volume
         configMap:
