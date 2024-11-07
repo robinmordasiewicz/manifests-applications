@@ -6,17 +6,20 @@ metadata:
 data:
   init-script.sh: |
     #!/bin/sh
-    # Function to get secret value
     get_secret_value() {
         local field=$1
         kubectl get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
     }
     USERNAME=$(get_secret_value username)
     PASSWORD=$(get_secret_value password)
-
     if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
         echo "Error: Could not retrieve username or password from the secret."
         exit 1
     fi
-    echo "Username: $USERNAME"
-    echo "Password: $PASSWORD"
+    TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+    curl "https://10.0.0.4:8443/api/v2.0/waf/openapi.openapischemafile" \
+      -k \
+      -H "Content-Type: multipart/form-data" \
+      -H "Authorization:$TOKEN" \
+      -F 'openapifile=@/files/openapi.yaml' \
+      --insecure
