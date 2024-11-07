@@ -3018,7 +3018,3 @@ data:
               "format": "int64"
               "description": "Total bytes transferred."
               "example": 2142590208
-kind: ConfigMap
-metadata:
-  creationTimestamp: null
-  name: openapifile
