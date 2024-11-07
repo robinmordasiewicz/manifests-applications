@@ -78,15 +78,15 @@ spec:
         image: alpine/k8s:1.30.6
         command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
         volumeMounts:
-          - name: init-script-volume
+          - name: ollama-init-script-volume
             mountPath: /scripts
           - name: openapifile-volume
             mountPath: /files
     volumes:
-      - name: init-script-volume
+      - name: ollama-init-script-volume
         configMap:
-          name: ollama-init-script
+          name: ollama-init-script-configmap
           defaultMode: 0755
       - name: openapifile-volume
         configMap:
-          name: openapifile
+          name: openapifile-configmap
