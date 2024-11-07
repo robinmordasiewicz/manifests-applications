@@ -6,4 +6,17 @@ metadata:
 data:
   init-script.sh: |
     #!/bin/sh
-    echo "Hello World"
+    # Function to get secret value
+    get_secret_value() {
+        local field=$1
+        kubectl get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
+    }
+    USERNAME=$(get_secret_value username)
+    PASSWORD=$(get_secret_value password)
+
+    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+        echo "Error: Could not retrieve username or password from the secret."
+        exit 1
+    fi
+    echo "Username: $USERNAME"
+    echo "Password: $PASSWORD"
