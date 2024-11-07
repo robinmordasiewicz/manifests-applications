@@ -13,3 +13,29 @@ roleRef:
     kind: ClusterRole
     name: svc-reader
     apiGroup: ""
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: application
+  name: secret-reader
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k1s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-secrets
+  namespace: application
+subjects:
+- kind: ServiceAccount
+  name: ollama
+  namespace: application
+roleRef:
+  kind: Role
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io
