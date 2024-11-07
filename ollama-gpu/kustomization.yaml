@@ -2,8 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  # - HelmRelease.yaml
-  # - HelmRepository.yaml
-  # - rbac.yaml
-  # - ConfigMap.yaml
-  # - openapifile-configmap.yaml
+  - HelmRelease.yaml
+  - HelmRepository.yaml
+  - rbac.yaml
+  - ConfigMap.yaml
+  - openapifile-configmap.yaml
