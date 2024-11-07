@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: docs
-          image: kyykqbggyesylatqmgwjuezkd.azurecr.io/docs:0.0.11
+          image: nginxinc/nginx-unprivileged:latest
           ports:
             - containerPort: 8080
