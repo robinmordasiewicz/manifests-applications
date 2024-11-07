@@ -60,7 +60,7 @@ data:
       -H 'Connection: keep-alive' \
       --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
 
-    curl "https://$FQDN/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
+    curl "https://10.0.0.4:8443/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
       --insecure \
       -H "Authorization:$TOKEN" \
       -X 'POST' \
