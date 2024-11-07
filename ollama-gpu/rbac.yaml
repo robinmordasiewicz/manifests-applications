@@ -2,17 +2,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-    name: read-svc
-    namespace: application
+  name: read-svc
 subjects:
-    - kind: ServiceAccount
-      name: ollama
-      apiGroup: ""
-      namespace: application
+- kind: ServiceAccount
+  name: ollama
+  namespace: application
 roleRef:
-    kind: ClusterRole
-    name: svc-reader
-    apiGroup: ""
+  kind: ClusterRole
+  name: svc-reader
+  apiGroup: rbac.authorization.k8s.io
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -26,7 +24,7 @@ rules:
   verbs: ["get", "list", "watch"]
 
 ---
-apiVersion: rbac.authorization.k1s.io/v1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: read-secrets
