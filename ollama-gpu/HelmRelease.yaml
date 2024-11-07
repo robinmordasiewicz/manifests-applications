@@ -75,11 +75,8 @@ spec:
       - "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
     initContainers:
       - name: init-script-runner
-        #image: alpine/k8s:1.30.6
-        image: busybox:1.28
-        command: ['sh', '-c', "ls -al /scripts"]
-        #args:
-        #  - "/scripts/init-script.sh"
+        image: alpine/k8s:1.30.6
+        command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
         volumeMounts:
           - name: init-script-volume
             mountPath: /scripts
