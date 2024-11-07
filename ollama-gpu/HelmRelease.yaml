@@ -72,4 +72,24 @@ spec:
         server-policy-http-to-https: "disable"
       }
       hosts:
-        - "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
+        - host: "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
+          paths:
+            - path: /
+              pathType: Prefix
+    initContainers:
+      - name: init-script-runner
+        image: alpine/k8s:1.30.6
+        command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
+        volumeMounts:
+          - name: ollama-init-script-volume
+            mountPath: /scripts
+          - name: openapifile-volume
+            mountPath: /files
+    volumes:
+      - name: ollama-init-script-volume
+        configMap:
+          name: ollama-init-script-configmap
+          defaultMode: 0755
+      - name: openapifile-volume
+        configMap:
+          name: openapifile-configmap
