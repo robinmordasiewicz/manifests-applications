@@ -73,6 +73,9 @@ spec:
       }
       hosts:
         - host: "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
+          paths:
+            - path: /
+              pathType: Prefix
     initContainers:
       - name: init-script-runner
         image: alpine/k8s:1.30.6
