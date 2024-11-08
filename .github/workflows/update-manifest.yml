@@ -4,7 +4,7 @@ on:
     types: [update-manifest]
 concurrency:
   group: ${{ github.workflow }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 permissions:
   id-token: write
   contents: write
@@ -32,7 +32,6 @@ jobs:
           TYPE=$(echo "$PAYLOAD" | jq -r '.type')
           VALUE=$(echo "$PAYLOAD" | jq -r '.value')
           VERSION=$(echo "$VALUE" | cut -d ':' -f 2)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
           yq -i "${SPEC} = \"${VALUE}\"" ${NAME}/${FILE}
 
       - name: Commit and Push Changes
@@ -41,6 +40,6 @@ jobs:
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit"
           else
-            git commit -m "Increment version to ${{ env.VERSION }}"
+            git commit -m "Process Dispatch"
             git push -f origin main:docs-version
           fi
