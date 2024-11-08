@@ -72,7 +72,7 @@ spec:
         server-policy-http-to-https: "disable"
       }
       hosts:
-        - host: "robinmordasiewicz-amerintlxperts-ai.eastus.cloudapp.azure.com"
+        - host: "ollama.bankexample.com"
           paths:
             - path: /
               pathType: Prefix
