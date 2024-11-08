@@ -3,16 +3,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: app-ingress
-  namespace: application
+  namespace: video
   annotations: {
     "fortiweb-ip" : "10.0.0.4",
     "fortiweb-login" : "fortiweb-login-secret",
     "fortiweb-port": "8443",
     "fortiweb-ctrl-log" : "enable",  
-    "virtual-server-ip" : "10.0.0.5",
+    "virtual-server-ip" : "10.0.0.7",
     "virtual-server-addr-type" : "ipv4",
     "virtual-server-interface" : "port1",
-    "server-policy-web-protection-profile" : "ollama",
     "server-policy-https-service" : "HTTPS",
     "server-policy-http-service" : "HTTP",
     "server-policy-syn-cookie" : "enable",
@@ -30,4 +29,4 @@ spec:
           service:
             name: video
             port:
-              number: 8000
+              number: 8082

@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: video
-  namespace: application
+  namespace: video
 spec:
   replicas: 1
   selector:
@@ -14,15 +14,8 @@ spec:
       labels:
         app: video
     spec:
-      tolerations:
-      - key: "nvidia.com/gpu"
-        operator: "Exists"
-        effect: "NoSchedule"
       containers:
         - name: video
           image: ghcr.io/robinmordasiewicz/video:0.0.9
           ports:
-          - containerPort: 8000
-          resources:
-            limits:
-              nvidia.com/gpu: 0
+          - containerPort: 8082
