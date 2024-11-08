@@ -2,15 +2,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: docs
-  namespace: docs
+  name: dvwa
+  namespace: dvwa
   annotations: {
     fortiweb-ip: "10.0.0.4",
     fortiweb-login: "fortiweb-login-secret",
     fortiweb-port: "8443",
     fortiweb-ctrl-log: "disable",
     health-check-ctrl: "HLTHCK_HTTP",
-    virtual-server-ip: "10.0.0.5",
+    virtual-server-ip: "10.0.0.6",
     virtual-server-addr-type: "ipv4",
     virtual-server-interface: "port1",
     server-policy-https-service: "HTTPS",
@@ -22,6 +22,6 @@ spec:
   ingressClassName: fwb-ingress-controller
   defaultBackend:
     service:
-      name: docs
+      name: dvwa
       port:
-        number: 8080
+        number: 8081

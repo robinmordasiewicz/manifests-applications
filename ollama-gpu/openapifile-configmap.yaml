@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: openapifile-configmap
-  namespace: application
+  namespace: ollama
 data:
   openapi.yaml: |
     ---

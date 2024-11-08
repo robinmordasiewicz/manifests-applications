@@ -6,7 +6,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: ollama
-  namespace: application
+  namespace: ollama
 roleRef:
   kind: ClusterRole
   name: svc-reader
@@ -16,7 +16,7 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: application
+  namespace: ollama
   name: secret-reader
 rules:
 - apiGroups: [""]
@@ -28,11 +28,11 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: read-secrets
-  namespace: application
+  namespace: ollama
 subjects:
 - kind: ServiceAccount
   name: ollama
-  namespace: application
+  namespace: ollama
 roleRef:
   kind: Role
   name: secret-reader
