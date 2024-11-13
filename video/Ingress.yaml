@@ -20,10 +20,10 @@ metadata:
 spec:
   ingressClassName: fwb-ingress-controller
   rules:
-  - host: www.bankexample.com
+  - host: video.bankexample.com
     http:
       paths:
-      - path: /video
+      - path: /
         pathType: Prefix
         backend:
           service:

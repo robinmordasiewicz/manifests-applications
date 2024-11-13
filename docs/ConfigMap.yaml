@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ollama-init-script-configmap
-  namespace: ollama
+  name: nginxconfigmap
+  namespace: docs
 data:
-  init-script.sh: |
+  nginx.conf: |
     #!/bin/sh
     get_secret_value() {
         local field=$1
