@@ -6,63 +6,33 @@ metadata:
   namespace: docs
 data:
   nginx.conf: |
-    #!/bin/sh
-    get_secret_value() {
-        local field=$1
-        kubectl get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
+    server {
+        listen       8080 default_server;
+        server_name  _;
+        port_in_redirect off;
+        access_log /dev/stdout combined;
+        error_log /dev/stderr warn;
+        root /www/;
+        error_page 404 /404.html;
+        error_page 500 502 503 504 /50x.html;
+        add_header X-Content-Type-Options nosniff;
+        location / {
+            auth_basic "Restricted Content";
+            auth_basic_user_file /etc/nginx/.htpasswd;
+            try_files $uri $uri/ =404;
+        }
+        location ~* .min.(css|js)$ {
+            add_header Cache-Control "max-age=604800";
+            add_header Surrogate-Control "max-age=604800";
+        }
+        location /search/search_index.json {
+            add_header Cache-Control "max-age=3600";
+            add_header Surrogate-Control "max-age=3600";
+        }
+        location /.minio.sys/ {
+            deny all;
+        }
+        location = /50x.html {
+            root /usr/share/nginx/html;
+        }
     }
-    USERNAME=$(get_secret_value username)
-    PASSWORD=$(get_secret_value password)
-    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
-        echo "Error: Could not retrieve username or password from the secret."
-        exit 1
-    fi
-    TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
-    curl "https://10.0.0.4:8443/api/v2.0/waf/openapi.openapischemafile" \
-      --insecure \
-      -H "Authorization:$TOKEN" \
-      -k \
-      -H "Content-Type: multipart/form-data" \
-      -H 'Connection: keep-alive' \
-      -F 'openapifile=@/files/openapi.yaml'
-
-    curl "https://10.0.0.4:8443/api/v2.0/cmdb/waf/openapi-validation-policy" \
-      --insecure \
-      -X 'POST' \
-      -H "Authorization:$TOKEN" \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Accept-Language: en-US,en;q=0.9' \
-      -H 'Sec-Fetch-Mode: cors' \
-      -H 'Accept-Encoding: gzip, deflate, br' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
-
-    curl "https://10.0.0.4:8443/api/v2.0/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
-      --insecure \
-      -X 'POST' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H "Authorization:$TOKEN" \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"openapi-file":"openapi.yaml"}}'
-
-    curl "https://10.0.0.4:8443/api/v2.0/cmdb/waf/openapi-validation-policy?mkey=ollama" \
-      --insecure \
-      -H "Authorization:$TOKEN" \
-      -X 'PUT' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Cache-Control: no-cache' \
-      -H 'Accept-Encoding: gzip, deflate, br' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
-
-    curl "https://10.0.0.4:8443/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
-      --insecure \
-      -H "Authorization:$TOKEN" \
-      -X 'POST' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"name":"ollama","client-management":"enable","amf3-protocol-detection":"disable","mobile-app-identification":"disable","token-header":"Jwt-Token","ip-intelligence":"disable","fortigate-quarantined-ips":"disable","quarantined-ip-action":"alert","quarantined-ip-severity":"High","rdt-reason":"disable","openapi-validation-policy":"ollama"}}'
