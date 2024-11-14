@@ -10,7 +10,7 @@ permissions:
   contents: write
 jobs:
   update-manifest:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
 
       - name: Checkout Repo
@@ -32,7 +32,7 @@ jobs:
           TYPE=$(echo "$PAYLOAD" | jq -r '.type')
           VALUE=$(echo "$PAYLOAD" | jq -r '.value')
           VERSION=$(echo "$VALUE" | cut -d ':' -f 2)
-          yq -i "${SPEC} = \"${VALUE}\"" ${NAME}/${FILE}
+          yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
 
       - name: Commit and Push Changes
         run: |

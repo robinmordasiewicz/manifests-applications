@@ -48,7 +48,7 @@ spec:
       size: 50Gi
     service:
       type: NodePort
-    tolerations: 
+    tolerations:
       - key: "nvidia.com/gpu"
         operator: "Equal"
         value: "true"

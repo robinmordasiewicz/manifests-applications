@@ -8,8 +8,8 @@ metadata:
     app: video
 spec:
   ports:
-  - port: 8082
-    targetPort: 8082
+    - port: 8082
+      targetPort: 8082
   selector:
     app: video
   type: NodePort
