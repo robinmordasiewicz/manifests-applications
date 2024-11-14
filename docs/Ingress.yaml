@@ -21,13 +21,13 @@ metadata:
 spec:
   ingressClassName: fwb-ingress-controller
   rules:
-  - host: docs.bankexample.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: docs
-            port:
-              number: 8080
+    - host: docs.bankexample.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: docs
+                port:
+                  number: 8080
