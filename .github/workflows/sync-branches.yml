@@ -19,7 +19,7 @@ jobs:
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions Bot"
-          git config user.email "<>"
+          git config user.email "actions@github.com"
 
       - name: List All Branches
         id: list-branches
@@ -33,7 +33,7 @@ jobs:
           while IFS= read -r branch; do
             echo "Syncing branch $branch"
             git checkout $branch
-            git merge --no-edit origin/main
-            git push origin $branch
+            git merge origin/main || (echo "Merge conflict in $branch. Skipping..." && git merge --abort)
+            git push origin $branch || echo "Push failed for $branch"
           done < branches.txt
 
