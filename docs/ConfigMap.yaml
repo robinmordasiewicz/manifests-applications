@@ -5,7 +5,7 @@ metadata:
   name: nginxconfigmap
   namespace: docs
 data:
-  nginx.conf: |
+  default.conf: |
     server {
         listen       8080 default_server;
         server_name  _;
