@@ -16,23 +16,35 @@ data:
         error_page 404 /404.html;
         error_page 500 502 503 504 /50x.html;
         add_header X-Content-Type-Options nosniff;
+
+        # Allow unrestricted access to root and index.html
+        location ~ ^/(|index.html)$ {
+            try_files $uri $uri/ =404;
+        }
+
+        # Password protect subdirectories and other files
         location / {
             auth_basic "Restricted Content";
             auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
         }
+
         location ~* .min.(css|js)$ {
             add_header Cache-Control "max-age=604800";
             add_header Surrogate-Control "max-age=604800";
         }
+
         location /search/search_index.json {
             add_header Cache-Control "max-age=3600";
             add_header Surrogate-Control "max-age=3600";
         }
+
         location /.minio.sys/ {
             deny all;
         }
+
         location = /50x.html {
             root /usr/share/nginx/html;
         }
     }
+
