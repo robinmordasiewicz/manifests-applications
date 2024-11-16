@@ -20,9 +20,15 @@ spec:
           ports:
             - containerPort: 8080
           volumeMounts:
-            - mountPath: /etc/nginx/conf.d
-              name: configmap-volume
+            - name: htpasswd-volume
+              mountPath: /etc/nginx/.htpasswd
+              subPath: htpasswd
+            - name: configmap-volume
+              mountPath: /etc/nginx/conf.d
       volumes:
+        - name: htpasswd-volume
+          secret:
+            secretName: htpasswd-secret
         - name: configmap-volume
           configMap:
             name: nginxconfigmap
