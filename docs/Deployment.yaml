@@ -24,7 +24,8 @@ spec:
               mountPath: /etc/nginx/.htpasswd
               subPath: htpasswd
             - name: configmap-volume
-              mountPath: /etc/nginx/conf.d
+              mountPath: /etc/nginx/conf.d/nginx.conf
+              subPath: nginx.conf
       volumes:
         - name: htpasswd-volume
           secret:
