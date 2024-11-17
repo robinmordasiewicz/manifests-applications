@@ -46,18 +46,5 @@ data:
         location = /50x.html {
             root /usr/share/nginx/html;
         }
-        # Handle health check HEAD requests from "HealthCheck" user agent
-        location = / {
-            try_files $uri $uri/ =404;
-            if ($request_method = HEAD) {
-                if ($http_user_agent ~* "HealthCheck") {
-                    set $loggable 0;
-                    if ($status != 200) {
-                        set $loggable 1;
-                    }
-                    access_log /dev/stdout combined if=$loggable;
-                }
-            }
-        }
     }
 
