@@ -37,7 +37,7 @@ data:
         location /theme {
             try_files $uri $uri/ =404;
         }
-        location ~ ^/(?!assets|search|theme|favicon\.ico|apple-touch-icon\.png|apple-touch-icon-precomposed\.png)(.*) {
+        location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|apple-touch-icon\.png|apple-touch-icon-precomposed\.png)(.*) {
             auth_basic "Restricted";
             auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
