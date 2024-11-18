@@ -21,43 +21,29 @@ data:
         location ~ ^/(|index.html)$ {
             try_files $uri $uri/ =404;
         }
-
-        # Password protect subdirectories and other files
-        location / {
-            auth_basic "Restricted Content";
-            auth_basic_user_file /etc/nginx/.htpasswd;
+        location ~* \.(css|js|ico|png)$ {
+            try_files $uri =404;
+        }
+        location /search {
             try_files $uri $uri/ =404;
         }
-
-        location ~* .min.(css|js)$ {
-            add_header Cache-Control "max-age=604800";
-            add_header Surrogate-Control "max-age=604800";
-        }
-
         location /search/search_index.json {
             add_header Cache-Control "max-age=3600";
             add_header Surrogate-Control "max-age=3600";
         }
-
-        location /.minio.sys/ {
-            deny all;
+        location /assets {
+            try_files $uri $uri/ =404;
         }
-
+        location /theme {
+            try_files $uri $uri/ =404;
+        }
+        location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|apple-touch-icon\.png|apple-touch-icon-precomposed\.png)(.*) {
+            auth_basic "Restricted";
+            auth_basic_user_file /etc/nginx/.htpasswd;
+            try_files $uri $uri/ =404;
+        }
         location = /50x.html {
             root /usr/share/nginx/html;
-        }
-        # Handle health check HEAD requests from "HealthCheck" user agent
-        location = / {
-            try_files $uri $uri/ =404;
-            if ($request_method = HEAD) {
-                if ($http_user_agent ~* "HealthCheck") {
-                    set $loggable 0;
-                    if ($status != 200) {
-                        set $loggable 1;
-                    }
-                    access_log /dev/stdout combined if=$loggable;
-                }
-            }
         }
     }
 

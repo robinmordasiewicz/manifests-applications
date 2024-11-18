@@ -23,7 +23,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Process dispatch
+      - name: Process VERSION
         run: |
           PAYLOAD='${{ toJson(github.event.client_payload) }}'
           FILE=$(echo "$PAYLOAD" | jq -r '.file')
@@ -31,7 +31,14 @@ jobs:
           SPEC=$(echo "$PAYLOAD" | jq -r '.spec')
           TYPE=$(echo "$PAYLOAD" | jq -r '.type')
           VALUE=$(echo "$PAYLOAD" | jq -r '.value')
-          VERSION=$(echo "$VALUE" | cut -d ':' -f 2)
+          yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
+
+      - name: Process fqdn
+        run: |
+          FILE="Ingress.yaml"
+          NAME="docs"
+          SPEC=".spec.rules[0].host"
+          VALUE="${{ secrets.DOCS_FQDN }}"
           yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
 
       - name: Commit and Push Changes
