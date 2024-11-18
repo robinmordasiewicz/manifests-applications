@@ -31,3 +31,23 @@ spec:
                 name: docs
                 port:
                   number: 8080
+    - host: docs.amerintlxperts.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: docs
+                port:
+                  number: 8080
+    - host: www.amerintlxperts.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: docs
+                port:
+                  number: 8080
