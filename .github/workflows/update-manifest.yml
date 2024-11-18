@@ -10,7 +10,7 @@ permissions:
   contents: write
 jobs:
   update-manifest:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
 
       - name: Checkout Repo
