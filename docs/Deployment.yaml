@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: docs
+      annotations:
+        configChecksum: "{{ checksum .ConfigMap }}"
     spec:
       containers:
         - name: docs
