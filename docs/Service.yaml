@@ -6,6 +6,9 @@ metadata:
   namespace: docs
   labels:
     app: docs
+  annotations: {
+    "health-check-ctrl" : "HLTHCK_HTTP"
+  }
 spec:
   ports:
     - port: 8080
