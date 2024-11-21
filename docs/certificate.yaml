@@ -3,6 +3,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: www.amerintlxperts.com
+  namespace: docs
 spec:
   secretName: www.amerintlxperts.com
   privateKey:
