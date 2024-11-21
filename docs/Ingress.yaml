@@ -19,6 +19,10 @@ metadata:
   }
 spec:
   ingressClassName: fwb-ingress-controller
+  tls:
+    - secretName: docs-tls
+      hosts:
+        - docs.amerintlxperts.com
   rules:
     - host: docs.bankexample.com
       http:
