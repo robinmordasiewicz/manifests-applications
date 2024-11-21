@@ -2,16 +2,16 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: www.amerintlxperts.com
+  name: docs-tls
   namespace: docs
 spec:
-  secretName: www.amerintlxperts.com
+  secretName: docs-tls
   privateKey:
     rotationPolicy: Always
-  commonName: www.amerintlxperts.com
+  commonName: docs.amerintlxperts.com
   dnsNames:
-    - www.amerintlxperts.com
     - docs.amerintlxperts.com
+    - www.amerintlxperts.com
   usages:
     - digital signature
     - key encipherment
