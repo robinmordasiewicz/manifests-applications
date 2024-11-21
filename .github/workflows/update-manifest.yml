@@ -33,13 +33,13 @@ jobs:
           VALUE=$(echo "$PAYLOAD" | jq -r '.value')
           yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
 
-      - name: Process fqdn
-        run: |
-          FILE="Ingress.yaml"
-          NAME="docs"
-          SPEC=".spec.rules[0].host"
-          VALUE="${{ secrets.DOCS_FQDN }}"
-          yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
+#      - name: Process fqdn
+#        run: |
+#          FILE="Ingress.yaml"
+#          NAME="docs"
+#          SPEC=".spec.rules[0].host"
+#          VALUE="${{ secrets.DOCS_FQDN }}"
+#          yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
 
       - name: Commit and Push Changes
         run: |
