@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   - ConfigMap.yaml
   - Deployment.yaml
-  - Ingress.yaml
   - rbac.yaml
   - Service.yaml
-  - certificate.yaml
+    # - Ingress.yaml
+    # - certificate.yaml

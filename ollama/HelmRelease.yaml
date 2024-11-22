@@ -72,7 +72,7 @@ spec:
         server-policy-http-to-https: "disable"
       }
       hosts:
-        - host: "ollama.bankexample.com"
+        - host: "ollama.amerintlxperts.com"
           paths:
             - path: /
               pathType: Prefix

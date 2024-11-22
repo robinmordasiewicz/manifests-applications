@@ -22,7 +22,7 @@ metadata:
 spec:
   ingressClassName: fwb-ingress-controller
   rules:
-    - host: dvwa.bankexample.com
+    - host: dvwa.amerintlxperts.com
       http:
         paths:
           - path: /
