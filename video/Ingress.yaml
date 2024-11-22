@@ -20,7 +20,7 @@ metadata:
 spec:
   ingressClassName: fwb-ingress-controller
   rules:
-    - host: video.bankexample.com
+    - host: video.amerintlxperts.com
       http:
         paths:
           - path: /
