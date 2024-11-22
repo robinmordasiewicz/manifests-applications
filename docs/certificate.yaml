@@ -8,9 +8,9 @@ spec:
   secretName: docs-tls
   privateKey:
     rotationPolicy: Always
-  commonName: docs.amerintlxperts.com
+  commonName: docs.bankexample.com
   dnsNames:
-    - docs.amerintlxperts.com
+    - docs.bankexample.com
   issuerRef:
     name: letsencrypt-staging
     kind: ClusterIssuer
