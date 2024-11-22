@@ -17,5 +17,5 @@ spec:
     - key encipherment
     - server auth
   issuerRef:
-    name: selfsigned
+    name: letsencrypt-staging
     kind: ClusterIssuer
