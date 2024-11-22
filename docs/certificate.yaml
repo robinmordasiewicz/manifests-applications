@@ -11,11 +11,6 @@ spec:
   commonName: docs.amerintlxperts.com
   dnsNames:
     - docs.amerintlxperts.com
-    - www.amerintlxperts.com
-  usages:
-    - digital signature
-    - key encipherment
-    - server auth
   issuerRef:
     name: letsencrypt-staging
     kind: ClusterIssuer
