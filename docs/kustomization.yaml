@@ -7,4 +7,4 @@ resources:
   - Ingress.yaml
   - rbac.yaml
   - Service.yaml
-    # - certificate.yaml
+  - certificate.yaml
