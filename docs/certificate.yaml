@@ -11,6 +11,10 @@ spec:
   commonName: docs.bankexample.com
   dnsNames:
     - docs.bankexample.com
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
   issuerRef:
-    name: letsencrypt-staging
+    name: selfsigned
     kind: ClusterIssuer
