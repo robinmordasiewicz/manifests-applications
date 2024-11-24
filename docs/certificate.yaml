@@ -8,9 +8,9 @@ spec:
   secretName: docs-tls
   privateKey:
     rotationPolicy: Always
-  commonName: docs.robinmordasiewicz.amerintlxperts.com
+  commonName: $DOMAIN_NAME
   dnsNames:
-    - docs.robinmordasiewicz.amerintlxperts.com
+    - $DOMAIN_NAME
   usages:
     - digital signature
     - key encipherment

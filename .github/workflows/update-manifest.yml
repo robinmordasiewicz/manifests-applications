@@ -2,6 +2,7 @@ name: update-manifest
 on:
   repository_dispatch:
     types: [update-manifest]
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
@@ -33,13 +34,15 @@ jobs:
           VALUE=$(echo "$PAYLOAD" | jq -r '.value')
           yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
 
-#      - name: Process fqdn
-#        run: |
-#          FILE="Ingress.yaml"
-#          NAME="docs"
-#          SPEC=".spec.rules[0].host"
-#          VALUE="${{ secrets.DOCS_FQDN }}"
-#          yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
+      - name: Process fqdn
+        run: |
+          export DOMAIN_NAME="${{ vars.DOCS_FQDN }}"
+          export DOCS_VERSION="${{ vars.DOCS_VERSION }}"
+          export ACR_LOGIN_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
+          envsubst < docs/certificate.yaml > docs/certificate.processed.yaml
+          envsubst < docs/Ingress.yaml > docs/Ingress.processed.yaml
+          mv docs/certificate.processed.yaml docs/certificate.yaml
+          mv docs/Ingress.processed.yaml docs/Ingress.yaml
 
       - name: Commit and Push Changes
         run: |

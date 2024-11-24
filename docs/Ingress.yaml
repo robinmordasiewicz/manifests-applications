@@ -23,9 +23,9 @@ spec:
   tls:
     - secretName: docs-tls
       hosts:
-        - docs.robinmordasiewicz.amerintlxperts.com
+        - $DOMAIN_NAME
   rules:
-    - host: docs.robinmordasiewicz.amerintlxperts.com
+    - host: $DOMAIN_NAME
       http:
         paths:
           - path: /
