@@ -8,13 +8,13 @@ spec:
   secretName: docs-tls
   privateKey:
     rotationPolicy: Always
-  commonName: docs.amerintlxperts.com
+  commonName: $DOMAIN_NAME
   dnsNames:
-    - docs.amerintlxperts.com
+    - $DOMAIN_NAME
   usages:
     - digital signature
     - key encipherment
     - server auth
   issuerRef:
-    name: letsencrypt-production
+    name: letsencrypt
     kind: ClusterIssuer

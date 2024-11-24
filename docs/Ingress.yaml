@@ -23,9 +23,9 @@ spec:
   tls:
     - secretName: docs-tls
       hosts:
-        - docs.amerintlxperts.com
+        - $DOMAIN_NAME
   rules:
-    - host: docs.amerintlxperts.com
+    - host: $DOMAIN_NAME
       http:
         paths:
           - path: /
