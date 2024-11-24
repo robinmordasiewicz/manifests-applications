@@ -24,25 +24,24 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Process VERSION
-        run: |
-          PAYLOAD='${{ toJson(github.event.client_payload) }}'
-          FILE=$(echo "$PAYLOAD" | jq -r '.file')
-          NAME=$(echo "$PAYLOAD" | jq -r '.name')
-          SPEC=$(echo "$PAYLOAD" | jq -r '.spec')
-          TYPE=$(echo "$PAYLOAD" | jq -r '.type')
-          VALUE=$(echo "$PAYLOAD" | jq -r '.value')
-          yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
+  #    - name: Process VERSION
+  #      run: |
+  #        PAYLOAD='${{ toJson(github.event.client_payload) }}'
+  #        FILE=$(echo "$PAYLOAD" | jq -r '.file')
+  #        NAME=$(echo "$PAYLOAD" | jq -r '.name')
+  #        SPEC=$(echo "$PAYLOAD" | jq -r '.spec')
+  #        TYPE=$(echo "$PAYLOAD" | jq -r '.type')
+  #        VALUE=$(echo "$PAYLOAD" | jq -r '.value')
+  #        yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
 
       - name: Process fqdn
         run: |
           export DOMAIN_NAME="${{ vars.DOCS_FQDN }}"
-          export DOCS_VERSION="${{ vars.DOCS_VERSION }}"
-          export ACR_LOGIN_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
           envsubst < docs/certificate.yaml > docs/certificate.processed.yaml
           envsubst < docs/Ingress.yaml > docs/Ingress.processed.yaml
           mv docs/certificate.processed.yaml docs/certificate.yaml
           mv docs/Ingress.processed.yaml docs/Ingress.yaml
+          yq eval -i ".spec.template.spec.containers[0].image = \"${{ secrets.ACR_LOGIN_SERVER }}/docs:${{ vars.DOCS_VERSION }}\"" "docs/Deployment.yaml"
 
       - name: Commit and Push Changes
         run: |
