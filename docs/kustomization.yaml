@@ -6,5 +6,4 @@ resources:
   - Deployment.yaml
   - rbac.yaml
   - Service.yaml
-  - certificate.yaml
   - Ingress.yaml
