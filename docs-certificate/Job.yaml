@@ -1,3 +1,4 @@
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -13,11 +14,15 @@ spec:
             - /bin/sh
             - -c
             - |
-              while ! kubectl get secret docs-tls -n docs > /dev/null 2>&1; do
+              echo "Checking if the certificate secret is populated..."
+              while true; do
+                if kubectl get secret docs-tls -n docs -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
+                  echo "Certificate secret is ready."
+                  exit 0
+                fi
                 echo "Waiting for certificate to be ready..."
                 sleep 5
               done
-              echo "Certificate is ready."
           resources:
             requests:
               cpu: 100m
