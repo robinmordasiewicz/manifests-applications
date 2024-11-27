@@ -71,8 +71,12 @@ spec:
         server-policy-syn-cookie: "enable",
         server-policy-http-to-https: "disable"
       }
+      tls:
+        - secretName: ollama-tls
+          hosts:
+            - "$DOMAIN_NAME"
       hosts:
-        - host: "ollama.amerintlxperts.com"
+        - host: "$DOMAIN_NAME"
           paths:
             - path: /
               pathType: Prefix

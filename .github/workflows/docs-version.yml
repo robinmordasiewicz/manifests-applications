@@ -1,7 +1,7 @@
-name: update-manifest
+name: docs-version
 on:
   repository_dispatch:
-    types: [update-manifest]
+    types: [docs-version]
   workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}
@@ -10,7 +10,7 @@ permissions:
   id-token: write
   contents: write
 jobs:
-  update-manifest:
+  docs-version:
     runs-on: ubuntu-latest
     steps:
 
