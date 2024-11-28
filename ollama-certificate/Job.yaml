@@ -29,4 +29,3 @@ spec:
               memory: 64Mi
       restartPolicy: Never
   backoffLimit: 4
-

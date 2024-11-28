@@ -89,9 +89,9 @@ spec:
             mountPath: /files
     service:
       type: NodePort
-    service.annotations: {
-      "health-check-ctrl": "HLTHCK_HTTP"
-    }
+      annotations: {
+        "health-check-ctrl": "HLTHCK_HTTP"
+      }
     volumes:
       - name: ollama-init-script-volume
         configMap:
