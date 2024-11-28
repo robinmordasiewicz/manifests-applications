@@ -59,7 +59,7 @@ spec:
       annotations: {
         fortiweb-ip: "10.0.0.4",
         fortiweb-login: "fortiweb-login-secret",
-        fortiweb-port: "8443",
+        fortiweb-port: "443",
         virtual-server-ip: "10.0.0.7",
         virtual-server-addr-type: "ipv4",
         virtual-server-interface: "port1",
