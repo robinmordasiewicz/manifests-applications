@@ -46,8 +46,6 @@ spec:
     persistentVolume:
       enabled: true
       size: 50Gi
-    service:
-      type: NodePort
     tolerations:
       - key: "nvidia.com/gpu"
         operator: "Equal"
@@ -69,7 +67,7 @@ spec:
         server-policy-https-service: "HTTPS",
         server-policy-http-service: "HTTP",
         server-policy-syn-cookie: "enable",
-        server-policy-http-to-https: "disable"
+        server-policy-http-to-https: "enable"
       }
       tls:
         - secretName: ollama-tls
@@ -89,6 +87,11 @@ spec:
             mountPath: /scripts
           - name: openapifile-volume
             mountPath: /files
+    service:
+      type: NodePort
+    service.annotations: {
+      "health-check-ctrl": "HLTHCK_HTTP"
+    }
     volumes:
       - name: ollama-init-script-volume
         configMap:
