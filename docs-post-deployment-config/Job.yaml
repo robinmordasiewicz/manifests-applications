@@ -2,15 +2,15 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: apply-letsencrypt-intermediate-job
+  name: docs-post-deployment-config
   annotations:
-    fluxcd.io/restart: "2024-12-01T12:00:04Z"
+    fluxcd.io/restart: "2024-12-01T12:00:05Z"
   namespace: docs
 spec:
   template:
     spec:
       containers:
-        - name: apply-letsencrypt-intermediate-job
+        - name: docs-post-deployment-config
           image: alpine/k8s:1.30.6
           command:
             - /bin/sh
