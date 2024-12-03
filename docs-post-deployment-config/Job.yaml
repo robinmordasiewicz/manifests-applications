@@ -23,7 +23,10 @@ spec:
                 exit 1
               fi
               TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
-              curl 'https://robinmordasiewicz-amerintlxperts-management.eastus.cloudapp.azure.com/api/v2.0/cmdb/server-policy/policy?mkey=ollama_ollama' \
+              curl 'https://10.0.0.4/api/v2.0/cmdb/server-policy/policy?mkey=ollama_ollama' \
+              --insecure \
+              -H "Authorization:$TOKEN" \
+              -k \
               -X 'PUT' \
               -H 'Content-Type: application/json;charset=utf-8' \
               -H 'Accept: application/json, text/plain, */*' \
