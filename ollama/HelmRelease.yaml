@@ -40,13 +40,6 @@ spec:
     ollama:
       gpu:
         enabled: true
-      models:
-        - nomic-embed-text
-        - llama3.2:3b
-        - llama3.1:8b
-        - gemma2:9b
-        - starcoder2:3b
-        - starcoder2:7b
     persistentVolume:
       enabled: true
       size: 50Gi
