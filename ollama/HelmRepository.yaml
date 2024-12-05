@@ -6,4 +6,4 @@ metadata:
   namespace: cluster-config
 spec:
   interval: 30m
-  url: https://amerintlxperts.github.io/ollama-helm/
+  url: https://otwld.github.io/ollama-helm/
