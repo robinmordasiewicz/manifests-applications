@@ -23,7 +23,7 @@ spec:
                 exit 1
               fi
               TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
-              curl 'https://10.0.0.4/api/v2.0/cmdb/server-policy/policy?mkey=ollama_ollama' \
+              curl 'https://10.0.0.4/api/v2.0/cmdb/server-policy/policy?mkey=docs_docs' \
               --insecure \
               -H "Authorization:$TOKEN" \
               -k \
@@ -32,7 +32,7 @@ spec:
               -H 'Accept: application/json, text/plain, */*' \
               -H 'Accept-Encoding: gzip, deflate, br' \
               -H 'Connection: keep-alive' \
-              --data-binary '{"data":{ps":"enable","traffic-mirror":"disable","traffic-mirror-type":"client-side","monitor-mode":"disable","syncookie":"enable","half-open-threshold":8192,"case-sensitive":"disable","proxy-protocol":"disable","retry-on":"disable","retry-on-cache-size":512,"retry-on-connect-failure":"disable","retry-times-on-connect-failure":3,"retry-on-http-layer":"disable","retry-times-on-http-layer":3,"retry-on-http-response-codes":"","web-cache":"disable","comment":"","prefer-current-session":"disable","tlog":"disable","scripting-list":"","scripting":"disable","tags":"","redirect-naked-domain":"disable","domainname":"","hostname":"","one-click-gslb":"disable","tls-v10":"enable","tls-v11":"enable","tls-v12":"enable","tls-v13":"disable","ssl-cipher":"medium","ssl-custom-cipher":"ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-CHACHA20-POLY1305 ECDHE-RSA-CHACHA20-POLY1305 ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256 ECDHE-ECDSA-AES256-SHA384 ECDHE-RSA-AES256-SHA384 ECDHE-ECDSA-AES128-SHA256 ECDHE-RSA-AES128-SHA256 ECDHE-ECDSA-AES256-SHA ECDHE-RSA-AES256-SHA ECDHE-ECDSA-AES128-SHA ECDHE-RSA-AES128-SHA AES256-GCM-SHA384 AES128-GCM-SHA256 AES256-SHA256 AES128-SHA256 ","tls13-custom-cipher":"","ssl-noreg":"enable","ssl-client-verify":"","sni":"disable","sni-strict":"disable","sni-certificate":"","urlcert":"disable","urlcert-group":"","urlcert-hlen":32,"client-certificate-forwarding":"disable","client-certificate-forwarding-sub-header":"X-Client-DN","client-certificate-forwarding-cert-header":"X-Client-Cert","hsts-header":"disable","hsts-max-age":15552000,"hsts-include-subdomains":"disable","hsts-preload":"disable","hpkp-header":"","use-ciphers-group":"disable","ssl-ciphers-group":"","rfc7919-comply":"disable","supported-groups":"","http3-service":"","https-service":"HTTPS","vserver":"ollama_ollama","service":"HTTP","certificate":"ollama_ollama-tls","intermediate-certificate-group":"letsencrypt-ca-group","web-protection-profile":"ollama","replacemsg":"Predefined"}}'
+              --data-binary '{"data":{"intermediate-certificate-group":"letsencrypt-ca-group"}}'
           resources:
             requests:
               cpu: 100m
