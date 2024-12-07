@@ -8,20 +8,13 @@ spec:
   template:
     spec:
       containers:
-        - name: init-script-runner
-          image: alpine/k8s:1.30.6
-          command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
-          volumeMounts:
-            - name: ollama-init-script-volume
-              mountPath: /scripts
-            - name: openapifile-volume
-              mountPath: /files
         - name: check-cert
-          image: bitnami/kubectl:latest
+          image: alpine/k8s:1.30.6
           command:
             - /bin/sh
             - -c
             - |
+              sh /scripts/init-script.sh
               echo "Checking if the certificate secret is populated..."
               while true; do
                 if kubectl get secret ollama-tls -n ollama -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
@@ -31,6 +24,11 @@ spec:
                 echo "Waiting for certificate to be ready..."
                 sleep 5
               done
+          volumeMounts:
+            - name: ollama-init-script-volume
+              mountPath: /scripts
+            - name: openapifile-volume
+              mountPath: /files
           resources:
             requests:
               cpu: 100m
