@@ -1,5 +1,9 @@
 name: docs-version
 on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'docs-certificate/**'
   repository_dispatch:
     types: [docs-version]
   workflow_dispatch:
