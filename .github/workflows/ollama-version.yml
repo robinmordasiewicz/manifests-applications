@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - 'ollama/**'
-      - 'ollama-certificate/**'
+      - 'ollama-dependencies/**'
   repository_dispatch:
     types: [ollama-version]
   workflow_dispatch:
@@ -31,8 +31,8 @@ jobs:
       - name: Process fqdn
         run: |
           export DOMAIN_NAME="${{ vars.OLLAMA_FQDN }}"
-          envsubst < ollama-certificate/certificate.yaml > ollama-certificate/certificate.processed.yaml
-          mv ollama-certificate/certificate.processed.yaml ollama-certificate/certificate.yaml
+          envsubst < ollama-dependencies/certificate.yaml > ollama-dependencies/certificate.processed.yaml
+          mv ollama-dependencies/certificate.processed.yaml ollama-dependencies/certificate.yaml
           envsubst < ollama/HelmRelease.yaml > ollama/HelmRelease.processed.yaml
           mv ollama/HelmRelease.processed.yaml ollama/HelmRelease.yaml
 
