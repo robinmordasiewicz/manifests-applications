@@ -6,4 +6,4 @@ resources:
   - Deployment.yaml
   - rbac.yaml
   - Service.yaml
-    # - Ingress.yaml
+  - Ingress.yaml
