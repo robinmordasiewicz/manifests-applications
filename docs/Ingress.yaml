@@ -16,6 +16,7 @@ metadata:
     server-policy-http-service: "HTTP",
     server-policy-syn-cookie: "enable",
     server-policy-http-to-https: "enable",
+    server-policy-intermediate-certificate-group: "letsencrypt-ca-group",
     server-policy-web-protection-profile: "Inline Standard Protection"
   }
 spec:
