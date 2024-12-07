@@ -1,5 +1,9 @@
 name: ollama-version
 on:
+  push:
+    paths:
+      - 'ollama/**'
+      - 'ollama-certificate/**'
   repository_dispatch:
     types: [ollama-version]
   workflow_dispatch:
