@@ -4,6 +4,3 @@ kind: Kustomization
 resources:
   - HelmRelease.yaml
   - HelmRepository.yaml
-  - rbac.yaml
-  - ConfigMap.yaml
-  - openapifile-configmap.yaml

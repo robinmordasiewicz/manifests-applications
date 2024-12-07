@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - 'docs/**'
-      - 'docs-certificate/**'
+      - 'docs-dependencies/**'
   repository_dispatch:
     types: [docs-version]
   workflow_dispatch:
@@ -31,8 +31,8 @@ jobs:
       - name: Process fqdn
         run: |
           export DOMAIN_NAME="${{ vars.DOCS_FQDN }}"
-          envsubst < docs-certificate/certificate.yaml > docs-certificate/certificate.processed.yaml
-          mv docs-certificate/certificate.processed.yaml docs-certificate/certificate.yaml
+          envsubst < docs-dependencies/certificate.yaml > docs-dependencies/certificate.processed.yaml
+          mv docs-dependencies/certificate.processed.yaml docs-dependencies/certificate.yaml
           envsubst < docs/Ingress.yaml > docs/Ingress.processed.yaml
           mv docs/Ingress.processed.yaml docs/Ingress.yaml
           yq eval -i ".spec.template.spec.containers[0].image = \"${{ secrets.ACR_LOGIN_SERVER }}/docs:${{ vars.DOCS_VERSION }}\"" "docs/Deployment.yaml"

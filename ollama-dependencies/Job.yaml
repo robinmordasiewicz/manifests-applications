@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wait-for-certificate
+  namespace: ollama
+spec:
+  template:
+    spec:
+      containers:
+        - name: check-cert
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Checking if the certificate secret is populated..."
+              while true; do
+                if kubectl get secret ollama-tls -n ollama -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
+                  echo "Certificate secret is ready."
+                  exit 0
+                fi
+                echo "Waiting for certificate to be ready..."
+                sleep 5
+              done
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+      restartPolicy: Never
+  backoffLimit: 4
