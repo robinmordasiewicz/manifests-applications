@@ -84,25 +84,8 @@ spec:
           paths:
             - path: /
               pathType: Prefix
-    initContainers:
-      - name: init-script-runner
-        image: alpine/k8s:1.30.6
-        command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
-        volumeMounts:
-          - name: ollama-init-script-volume
-            mountPath: /scripts
-          - name: openapifile-volume
-            mountPath: /files
     service:
       type: NodePort
       annotations: {
         "health-check-ctrl": "HLTHCK_HTTP"
       }
-    volumes:
-      - name: ollama-init-script-volume
-        configMap:
-          name: ollama-init-script-configmap
-          defaultMode: 0755
-      - name: openapifile-volume
-        configMap:
-          name: openapifile-configmap

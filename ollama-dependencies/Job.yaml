@@ -2,12 +2,20 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wait-for-certificate
+  name: ollama-dependencies
   namespace: ollama
 spec:
   template:
     spec:
       containers:
+        - name: init-script-runner
+          image: alpine/k8s:1.30.6
+          command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
+          volumeMounts:
+            - name: ollama-init-script-volume
+              mountPath: /scripts
+            - name: openapifile-volume
+              mountPath: /files
         - name: check-cert
           image: bitnami/kubectl:latest
           command:
@@ -28,4 +36,11 @@ spec:
               cpu: 100m
               memory: 64Mi
       restartPolicy: Never
-  backoffLimit: 4
+      volumes:
+        - name: ollama-init-script-volume
+          configMap:
+            name: ollama-init-script-configmap
+            defaultMode: 0755
+        - name: openapifile-volume
+          configMap:
+            name: openapifile-configmap
