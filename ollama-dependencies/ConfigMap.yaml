@@ -67,7 +67,7 @@ data:
     # Check Kubernetes API availability
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
+        retry_command curl --include --insecure --fail --cacert "$CA_CERT_PATH" \
             -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
     }
 
@@ -77,7 +77,7 @@ data:
         log "Retrieving secret value for field: $field"
         retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
             --certificate-authority="$CA_CERT_PATH" get secret fortiweb-login-secret \
-            -o jsonpath="{.data.$field}" | base64 --decode
+            -o jsonpath="{.data.$field}" | base64 -d
     }
 
     # Perform an API request with the ingress token
@@ -91,13 +91,13 @@ data:
 
         local response
         response=$(curl --include --insecure \
-            -H "Authorization: Bearer $INGRESS_TOKEN" \
+            -H "Authorization: $INGRESS_TOKEN" \
             -X "$method" "$url" "$@" 2>&1) || {
             log "Error: API request failed. Response: $response"
             exit 1
         }
 
-        echo "CURL: $response"
+        echo "$response"
     }
 
     # Main script
@@ -115,7 +115,7 @@ data:
     fi
 
     log "Successfully retrieved credentials. Generating ingress token..."
-    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 --wrap=0)
+    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 -w 0)
 
     if [ -z "$INGRESS_TOKEN" ]; then
         log "Error: Failed to generate ingress token."
