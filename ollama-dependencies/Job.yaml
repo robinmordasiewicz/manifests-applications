@@ -14,6 +14,7 @@ spec:
             - /bin/sh
             - -c
             - |
+              env > /tmp/env_vars
               sh /scripts/init-script.sh
               echo "Checking if the certificate secret is populated..."
               while true; do
