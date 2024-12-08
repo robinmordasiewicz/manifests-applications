@@ -10,6 +10,7 @@ data:
 
     MAX_RETRIES=30
     RETRY_DELAY=10
+    URL_PREFIX="https://10.0.0.4:443/api/v2.0"
 
     log() {
         echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
@@ -18,27 +19,34 @@ data:
     retry_command() {
         local attempt=0
         local exit_code=0
+        local response_file=$(mktemp)
 
         until [ $attempt -ge $MAX_RETRIES ]; do
-            "$@" && return 0
+            "$@" > "$response_file" 2>&1
             exit_code=$?
+            if [ $exit_code -eq 0 ]; then
+                log "Attempt $((attempt + 1)) succeeded."
+                log "Response:"
+                cat "$response_file" | sed 's/^/  /'
+                rm -f "$response_file"
+                return 0
+            fi
+
+            log "Attempt $((attempt + 1))/$MAX_RETRIES failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
+            log "Response from failed attempt:"
+            cat "$response_file" | sed 's/^/  /'
             attempt=$((attempt + 1))
-            log "Attempt $attempt/$MAX_RETRIES failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
             sleep $RETRY_DELAY
         done
 
         log "All $MAX_RETRIES attempts failed."
+        rm -f "$response_file"
         return $exit_code
     }
 
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
         retry_command kubectl version --request-timeout=5s
-        if [ $? -ne 0 ]; then
-            log "Error: Kubernetes API server is not available. Exiting."
-            exit 1
-        fi
-        log "Kubernetes API server is available."
     }
 
     get_secret_value() {
@@ -48,10 +56,25 @@ data:
 
     perform_request() {
         local method=$1
-        local url=$2
-        local headers=$3
-        local data=$4
-        retry_command curl "$url" \
+        local endpoint=$2
+        shift 2
+
+        local headers=""
+        local data=""
+        local url="${URL_PREFIX}${endpoint}"
+
+        for arg in "$@"; do
+            if [[ "$arg" == --data-binary* ]]; then
+                headers="-H 'Content-Type: application/json;charset=utf-8'"
+            fi
+            if [[ "$arg" == -H* || "$arg" == --data-binary* ]]; then
+                data="$data $arg"
+            else
+                headers="$headers $arg"
+            fi
+        done
+
+        retry_command curl --include "$url" \
             --insecure \
             -X "$method" \
             -H "Authorization:$TOKEN" \
@@ -77,28 +100,24 @@ data:
     TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
 
     log "Uploading OpenAPI schema file..."
-    perform_request "POST" "https://10.0.0.4:443/api/v2.0/waf/openapi.openapischemafile" \
+    perform_request "POST" "/waf/openapi.openapischemafile" \
         "-H 'Content-Type: multipart/form-data'" \
         "-F 'openapifile=@/files/openapi.yaml'"
 
     log "Creating OpenAPI validation policy..."
-    perform_request "POST" "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy" \
-        "-H 'Content-Type: application/json;charset=utf-8'" \
+    perform_request "POST" "/cmdb/waf/openapi-validation-policy" \
         "--data-binary '{\"data\":{\"q_type\":1,\"name\":\"ollama\",\"action\":\"alert\",\"action_val\":\"2\",\"block-period\":600,\"severity\":\"Low\",\"severity_val\":\"3\",\"trigger\":\"\",\"trigger_val\":\"0\",\"sz_schema-file\":-1}}'"
 
     log "Associating schema file with validation policy..."
-    perform_request "POST" "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
-        "-H 'Content-Type: application/json;charset=utf-8'" \
+    perform_request "POST" "/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
         "--data-binary '{\"data\":{\"openapi-file\":\"openapi.yaml\"}}'"
 
     log "Updating validation policy..."
-    perform_request "PUT" "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy?mkey=ollama" \
-        "-H 'Content-Type: application/json;charset=utf-8'" \
+    perform_request "PUT" "/cmdb/waf/openapi-validation-policy?mkey=ollama" \
         "--data-binary '{\"data\":{\"can_view\":0,\"q_ref\":0,\"can_clone\":1,\"q_type\":1,\"name\":\"ollama\",\"action\":\"alert\",\"action_val\":\"2\",\"block-period\":600,\"severity\":\"Low\",\"severity_val\":\"3\",\"trigger\":\"\",\"trigger_val\":\"0\",\"sz_schema-file\":0}}'"
 
     log "Creating web protection profile..."
-    perform_request "POST" "https://10.0.0.4:443/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
-        "-H 'Content-Type: application/json;charset=utf-8'" \
+    perform_request "POST" "/cmdb/waf/web-protection-profile.inline-protection" \
         "--data-binary '{\"data\":{\"name\":\"ollama\",\"client-management\":\"enable\",\"amf3-protocol-detection\":\"disable\",\"mobile-app-identification\":\"disable\",\"token-header\":\"Jwt-Token\",\"ip-intelligence\":\"disable\",\"fortigate-quarantined-ips\":\"disable\",\"quarantined-ip-action\":\"alert\",\"quarantined-ip-severity\":\"High\",\"rdt-reason\":\"disable\",\"openapi-validation-policy\":\"ollama\"}}'"
 
     log "Script completed successfully."
