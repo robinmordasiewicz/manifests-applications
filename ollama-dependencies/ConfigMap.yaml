@@ -87,8 +87,9 @@ data:
         local response_file=$(mktemp)
 
         response=$(curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "Authorization:$TOKEN" \
             -X "$method" \
+            -H 'Connection: keep-alive' \
             "$url" "$@" 2>&1)
 
         check_response_for_401 "$response"
