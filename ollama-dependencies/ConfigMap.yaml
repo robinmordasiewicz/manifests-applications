@@ -1,4 +1,3 @@
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,12 +8,23 @@ data:
     #!/bin/sh
     set -o allexport
     . /tmp/env_vars
-    export KUBECONFIG=/var/run/secrets/kubernetes.io/serviceaccount/token
     set +o allexport
+
     MAX_RETRIES=30
     RETRY_DELAY=10
     URL_PREFIX="https://10.0.0.4:443/api/v2.0"
     KUBERNETES_API="https://kubernetes.default.svc"
+    TOKEN_PATH="/var/run/secrets/kubernetes.io/serviceaccount/token"
+    CA_CERT_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    NAMESPACE_PATH="/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+
+    if [ ! -f "$TOKEN_PATH" ] || [ ! -f "$CA_CERT_PATH" ]; then
+        echo "Error: Missing Kubernetes service account credentials or CA certificate."
+        exit 1
+    fi
+
+    TOKEN=$(cat "$TOKEN_PATH")
+    NAMESPACE=$(cat "$NAMESPACE_PATH")
 
     log() {
         echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
@@ -50,14 +60,12 @@ data:
 
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        export KUBERNETES_SERVICE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-        retry_command kubectl --server="$KUBERNETES_API" version --request-timeout=5s
+        retry_command curl --silent --fail --cacert "$CA_CERT_PATH" -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
     }
 
     get_secret_value() {
         local field=$1
-        export KUBERNETES_SERVICE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-        retry_command kubectl --server="$KUBERNETES_API" get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
+        retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" --certificate-authority="$CA_CERT_PATH" get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
     }
 
     perform_request() {
@@ -65,28 +73,13 @@ data:
         local endpoint=$2
         shift 2
 
-        local headers=""
-        local data=""
         local url="${URL_PREFIX}${endpoint}"
 
-        for arg in "$@"; do
-            if [[ "$arg" == --data-binary* ]]; then
-                headers="-H 'Content-Type: application/json;charset=utf-8'"
-            fi
-            if [[ "$arg" == -H* || "$arg" == --data-binary* ]]; then
-                data="$data $arg"
-            else
-                headers="$headers $arg"
-            fi
-        done
-
-        retry_command curl --include "$url" \
-            --insecure \
+        retry_command curl --silent --fail --cacert "$CA_CERT_PATH" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
             -X "$method" \
-            -H "Authorization:$KUBERNETES_SERVICE_TOKEN" \
-            -H 'Connection: keep-alive' \
-            $headers \
-            $data
+            "$url" "$@"
     }
 
     log "Starting script..."
@@ -107,23 +100,10 @@ data:
 
     log "Uploading OpenAPI schema file..."
     perform_request "POST" "/waf/openapi.openapischemafile" \
-        "-H 'Content-Type: multipart/form-data'" \
-        "-F 'openapifile=@/files/openapi.yaml'"
+        -F "openapifile=@/files/openapi.yaml"
 
     log "Creating OpenAPI validation policy..."
     perform_request "POST" "/cmdb/waf/openapi-validation-policy" \
-        "--data-binary '{\"data\":{\"q_type\":1,\"name\":\"ollama\",\"action\":\"alert\",\"action_val\":\"2\",\"block-period\":600,\"severity\":\"Low\",\"severity_val\":\"3\",\"trigger\":\"\",\"trigger_val\":\"0\",\"sz_schema-file\":-1}}'"
-
-    log "Associating schema file with validation policy..."
-    perform_request "POST" "/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
-        "--data-binary '{\"data\":{\"openapi-file\":\"openapi.yaml\"}}'"
-
-    log "Updating validation policy..."
-    perform_request "PUT" "/cmdb/waf/openapi-validation-policy?mkey=ollama" \
-        "--data-binary '{\"data\":{\"can_view\":0,\"q_ref\":0,\"can_clone\":1,\"q_type\":1,\"name\":\"ollama\",\"action\":\"alert\",\"action_val\":\"2\",\"block-period\":600,\"severity\":\"Low\",\"severity_val\":\"3\",\"trigger\":\"\",\"trigger_val\":\"0\",\"sz_schema-file\":0}}'"
-
-    log "Creating web protection profile..."
-    perform_request "POST" "/cmdb/waf/web-protection-profile.inline-protection" \
-        "--data-binary '{\"data\":{\"name\":\"ollama\",\"client-management\":\"enable\",\"amf3-protocol-detection\":\"disable\",\"mobile-app-identification\":\"disable\",\"token-header\":\"Jwt-Token\",\"ip-intelligence\":\"disable\",\"fortigate-quarantined-ips\":\"disable\",\"quarantined-ip-action\":\"alert\",\"quarantined-ip-severity\":\"High\",\"rdt-reason\":\"disable\",\"openapi-validation-policy\":\"ollama\"}}'"
+        --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
 
     log "Script completed successfully."
