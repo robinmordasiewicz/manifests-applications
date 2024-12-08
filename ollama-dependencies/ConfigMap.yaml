@@ -34,7 +34,6 @@ data:
         local response="$1"
         if echo "$response" | grep -q "HTTP/1.1 401"; then
             log "Error: Received 401 Unauthorized response."
-            exit 1
         fi
     }
 
@@ -44,6 +43,7 @@ data:
         local response_file=$(mktemp)
 
         until [ $attempt -ge $MAX_RETRIES ]; do
+            log "Executing command: $*"
             "$@" > "$response_file" 2>&1
             exit_code=$?
             if [ $exit_code -eq 0 ]; then
@@ -84,9 +84,10 @@ data:
         shift 2
 
         local url="${URL_PREFIX}${endpoint}"
-        local response_file=$(mktemp)
+        local curl_command="curl --include --insecure --silent -H \"Authorization:$TOKEN\" -X \"$method\" -H 'Connection: keep-alive' \"$url\" $*"
+        log "Executing curl command: $curl_command"
 
-        response=$(curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
+        local response=$(curl --include --insecure --silent \
             -H "Authorization:$TOKEN" \
             -X "$method" \
             -H 'Connection: keep-alive' \
