@@ -30,6 +30,14 @@ data:
         echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
     }
 
+    check_response_for_401() {
+        local response="$1"
+        if echo "$response" | grep -q "HTTP/1.1 401"; then
+            log "Error: Received 401 Unauthorized response."
+            exit 1
+        fi
+    }
+
     retry_command() {
         local attempt=0
         local exit_code=0
@@ -42,6 +50,7 @@ data:
                 log "Attempt $((attempt + 1)) succeeded."
                 log "Response:"
                 cat "$response_file" | sed 's/^/  /'
+                check_response_for_401 "$(cat "$response_file")"
                 rm -f "$response_file"
                 return 0
             fi
@@ -49,6 +58,7 @@ data:
             log "Attempt $((attempt + 1))/$MAX_RETRIES failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
             log "Response from failed attempt:"
             cat "$response_file" | sed 's/^/  /'
+            check_response_for_401 "$(cat "$response_file")"
             attempt=$((attempt + 1))
             sleep $RETRY_DELAY
         done
@@ -74,12 +84,17 @@ data:
         shift 2
 
         local url="${URL_PREFIX}${endpoint}"
+        local response_file=$(mktemp)
 
-        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
+        response=$(curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -X "$method" \
-            "$url" "$@"
+            "$url" "$@" 2>&1)
+
+        check_response_for_401 "$response"
+
+        echo "$response"
     }
 
     log "Starting script..."
