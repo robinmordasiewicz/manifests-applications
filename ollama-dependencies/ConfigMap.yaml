@@ -7,62 +7,85 @@ metadata:
 data:
   init-script.sh: |
     #!/bin/sh
+
+    MAX_RETRIES=30
+    RETRY_DELAY=10
+
+    log() {
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
+    }
+
+    retry_command() {
+        local attempt=0
+        local exit_code=0
+
+        until [ $attempt -ge $MAX_RETRIES ]; do
+            "$@" && return 0
+            exit_code=$?
+            attempt=$((attempt + 1))
+            log "Attempt $attempt/$MAX_RETRIES failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
+            sleep $RETRY_DELAY
+        done
+
+        log "All $MAX_RETRIES attempts failed."
+        return $exit_code
+    }
+
     get_secret_value() {
         local field=$1
-        kubectl get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
+        retry_command kubectl get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
     }
+
+    log "Fetching credentials from secret..."
     USERNAME=$(get_secret_value username)
     PASSWORD=$(get_secret_value password)
+
     if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
-        echo "Error: Could not retrieve username or password from the secret."
+        log "Error: Could not retrieve username or password from the secret."
         exit 1
     fi
+
+    log "Successfully retrieved credentials. Generating token..."
     TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
-    curl "https://10.0.0.4:443/api/v2.0/waf/openapi.openapischemafile" \
-      --insecure \
-      -H "Authorization:$TOKEN" \
-      -k \
-      -H "Content-Type: multipart/form-data" \
-      -H 'Connection: keep-alive' \
-      -F 'openapifile=@/files/openapi.yaml'
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy" \
-      --insecure \
-      -X 'POST' \
-      -H "Authorization:$TOKEN" \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Accept-Language: en-US,en;q=0.9' \
-      -H 'Sec-Fetch-Mode: cors' \
-      -H 'Accept-Encoding: gzip, deflate, br' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
+    perform_request() {
+        local method=$1
+        local url=$2
+        local headers=$3
+        local data=$4
+        retry_command curl "$url" \
+            --insecure \
+            -X "$method" \
+            -H "Authorization:$TOKEN" \
+            -H 'Connection: keep-alive' \
+            $headers \
+            $data
+    }
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
-      --insecure \
-      -X 'POST' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H "Authorization:$TOKEN" \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"openapi-file":"openapi.yaml"}}'
+    log "Uploading OpenAPI schema file..."
+    perform_request "POST" "https://10.0.0.4:443/api/v2.0/waf/openapi.openapischemafile" \
+        "-H 'Content-Type: multipart/form-data'" \
+        "-F 'openapifile=@/files/openapi.yaml'"
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy?mkey=ollama" \
-      --insecure \
-      -H "Authorization:$TOKEN" \
-      -X 'PUT' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Cache-Control: no-cache' \
-      -H 'Accept-Encoding: gzip, deflate, br' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
+    log "Creating OpenAPI validation policy..."
+    perform_request "POST" "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy" \
+        "-H 'Content-Type: application/json;charset=utf-8'" \
+        "--data-binary '{\"data\":{\"q_type\":1,\"name\":\"ollama\",\"action\":\"alert\",\"action_val\":\"2\",\"block-period\":600,\"severity\":\"Low\",\"severity_val\":\"3\",\"trigger\":\"\",\"trigger_val\":\"0\",\"sz_schema-file\":-1}}'"
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
-      --insecure \
-      -H "Authorization:$TOKEN" \
-      -X 'POST' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"name":"ollama","client-management":"enable","amf3-protocol-detection":"disable","mobile-app-identification":"disable","token-header":"Jwt-Token","ip-intelligence":"disable","fortigate-quarantined-ips":"disable","quarantined-ip-action":"alert","quarantined-ip-severity":"High","rdt-reason":"disable","openapi-validation-policy":"ollama"}}'
+    log "Associating schema file with validation policy..."
+    perform_request "POST" "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
+        "-H 'Content-Type: application/json;charset=utf-8'" \
+        "--data-binary '{\"data\":{\"openapi-file\":\"openapi.yaml\"}}'"
+
+    log "Updating validation policy..."
+    perform_request "PUT" "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy?mkey=ollama" \
+        "-H 'Content-Type: application/json;charset=utf-8'" \
+        "--data-binary '{\"data\":{\"can_view\":0,\"q_ref\":0,\"can_clone\":1,\"q_type\":1,\"name\":\"ollama\",\"action\":\"alert\",\"action_val\":\"2\",\"block-period\":600,\"severity\":\"Low\",\"severity_val\":\"3\",\"trigger\":\"\",\"trigger_val\":\"0\",\"sz_schema-file\":0}}'"
+
+    log "Creating web protection profile..."
+    perform_request "POST" "https://10.0.0.4:443/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
+        "-H 'Content-Type: application/json;charset=utf-8'" \
+        "--data-binary '{\"data\":{\"name\":\"ollama\",\"client-management\":\"enable\",\"amf3-protocol-detection\":\"disable\",\"mobile-app-identification\":\"disable\",\"token-header\":\"Jwt-Token\",\"ip-intelligence\":\"disable\",\"fortigate-quarantined-ips\":\"disable\",\"quarantined-ip-action\":\"alert\",\"quarantined-ip-severity\":\"High\",\"rdt-reason\":\"disable\",\"openapi-validation-policy\":\"ollama\"}}'"
+
+    log "Script completed successfully."
+
