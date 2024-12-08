@@ -8,7 +8,7 @@ data:
   init-script.sh: |
     #!/bin/sh
     set -o allexport
-    source /tmp/env_vars
+    . /tmp/env_vars
     set +o allexport
     MAX_RETRIES=30
     RETRY_DELAY=10
