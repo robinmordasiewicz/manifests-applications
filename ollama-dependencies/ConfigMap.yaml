@@ -60,7 +60,7 @@ data:
 
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        retry_command curl --include --silent --fail --cacert "$CA_CERT_PATH" -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
+        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
     }
 
     get_secret_value() {
@@ -75,7 +75,7 @@ data:
 
         local url="${URL_PREFIX}${endpoint}"
 
-        retry_command curl --include --silent --fail --cacert "$CA_CERT_PATH" \
+        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -X "$method" \
