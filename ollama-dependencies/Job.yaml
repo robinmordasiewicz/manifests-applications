@@ -4,6 +4,8 @@ kind: Job
 metadata:
   name: ollama-dependencies
   namespace: ollama
+  annotations:
+    reloader.stakater.com/match: "true" 
 spec:
   template:
     spec:
