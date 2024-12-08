@@ -90,14 +90,14 @@ data:
         log "Performing API request to URL: $url with method: $method"
 
         local response
-        response=$(curl --include --insecure --silent \
+        response=$(curl --include --insecure \
             -H "Authorization: Bearer $INGRESS_TOKEN" \
             -X "$method" "$url" "$@" 2>&1) || {
             log "Error: API request failed. Response: $response"
             exit 1
         }
 
-        echo "$response"
+        echo "CURL: $response"
     }
 
     # Main script
