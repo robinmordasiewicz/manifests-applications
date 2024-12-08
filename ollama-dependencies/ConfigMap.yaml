@@ -88,7 +88,6 @@ data:
 
         response=$(curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
             -H "Authorization: Bearer $TOKEN" \
-            -H "Content-Type: application/json" \
             -X "$method" \
             "$url" "$@" 2>&1)
 
@@ -115,10 +114,12 @@ data:
 
     log "Uploading OpenAPI schema file..."
     perform_request "POST" "/waf/openapi.openapischemafile" \
+        -H "Content-Type: multipart/form-data" \
         -F "openapifile=@/files/openapi.yaml"
 
     log "Creating OpenAPI validation policy..."
     perform_request "POST" "/cmdb/waf/openapi-validation-policy" \
+        -H "Content-Type: application/json" \
         --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
 
     log "Script completed successfully."
