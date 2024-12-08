@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,10 +7,26 @@ metadata:
 data:
   init-script.sh: |
     #!/bin/sh
-    set -o allexport
-    . /tmp/env_vars
-    set +o allexport
+    set -o errexit
+    set -o nounset
+    set -o pipefail
 
+    # Enable logging
+    log() {
+        echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
+    }
+
+    # Load environment variables
+    log "Loading environment variables..."
+    if [ -f /tmp/env_vars ]; then
+        set -o allexport
+        . /tmp/env_vars
+        set +o allexport
+    else
+        log "Warning: /tmp/env_vars file not found. Proceeding without it."
+    fi
+
+    # Variables
     MAX_RETRIES=30
     RETRY_DELAY=10
     URL_PREFIX="https://10.0.0.4:443/api/v2.0"
@@ -18,101 +35,92 @@ data:
     CA_CERT_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     NAMESPACE_PATH="/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
+    # Validate Kubernetes Service Account credentials
+    log "Validating Kubernetes service account credentials..."
     if [ ! -f "$TOKEN_PATH" ] || [ ! -f "$CA_CERT_PATH" ]; then
-        echo "Error: Missing Kubernetes service account credentials or CA certificate."
+        log "Error: Missing Kubernetes service account token or CA certificate."
         exit 1
     fi
 
     TOKEN=$(cat "$TOKEN_PATH")
     NAMESPACE=$(cat "$NAMESPACE_PATH")
 
-    log() {
-        echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
-    }
-
-    check_response_for_401() {
-        local response="$1"
-        if echo "$response" | grep -q "HTTP/1.1 401"; then
-            log "Error: Received 401 Unauthorized response."
-        fi
-    }
-
+    # Function to retry a command with logging
     retry_command() {
         local attempt=0
         local exit_code=0
-        local response_file=$(mktemp)
 
         until [ $attempt -ge $MAX_RETRIES ]; do
-            log "Executing command: $*"
-            "$@" > "$response_file" 2>&1
-            exit_code=$?
-            if [ $exit_code -eq 0 ]; then
-                log "Attempt $((attempt + 1)) succeeded."
-                log "Response:"
-                cat "$response_file" | sed 's/^/  /'
-                check_response_for_401 "$(cat "$response_file")"
-                rm -f "$response_file"
-                return 0
-            fi
+            log "Attempt $((attempt + 1)): Executing command: $*"
+            "$@" && return 0
 
-            log "Attempt $((attempt + 1))/$MAX_RETRIES failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
-            log "Response from failed attempt:"
-            cat "$response_file" | sed 's/^/  /'
-            check_response_for_401 "$(cat "$response_file")"
+            exit_code=$?
+            log "Command failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
             attempt=$((attempt + 1))
             sleep $RETRY_DELAY
         done
 
-        log "All $MAX_RETRIES attempts failed."
-        rm -f "$response_file"
+        log "Error: Command failed after $MAX_RETRIES attempts."
         return $exit_code
     }
 
+    # Check Kubernetes API availability
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
+        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
+            -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
     }
 
+    # Retrieve a secret field value from Kubernetes
     get_secret_value() {
         local field=$1
-        retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" --certificate-authority="$CA_CERT_PATH" get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
+        log "Retrieving secret value for field: $field"
+        retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+            --certificate-authority="$CA_CERT_PATH" get secret fortiweb-login-secret \
+            -o jsonpath="{.data.$field}" | base64 --decode
     }
 
+    # Perform an API request with the ingress token
     perform_request() {
         local method=$1
         local endpoint=$2
         shift 2
 
         local url="${URL_PREFIX}${endpoint}"
-        local curl_command="curl --include --insecure --silent -H \"Authorization:$INGRESS_TOKEN\" -X \"$method\" -H 'Connection: keep-alive' \"$url\" $*"
-        log "Executing curl command: $curl_command"
+        log "Performing API request to URL: $url with method: $method"
 
-        local response=$(curl --include --insecure --silent \
-            -H "Authorization:$INGRESS_TOKEN" \
-            -X "$method" \
-            -H 'Connection: keep-alive' \
-            "$url" "$@" 2>&1)
-
-        check_response_for_401 "$response"
+        local response
+        response=$(curl --include --insecure --silent \
+            -H "Authorization: Bearer $INGRESS_TOKEN" \
+            -X "$method" "$url" "$@" 2>&1) || {
+            log "Error: API request failed. Response: $response"
+            exit 1
+        }
 
         echo "$response"
     }
 
-    log "Starting script..."
+    # Main script
+    log "Starting initialization script..."
 
     check_kubeapi_availability
 
-    log "Fetching credentials from secret..."
+    log "Fetching credentials from Kubernetes secret..."
     USERNAME=$(get_secret_value username)
     PASSWORD=$(get_secret_value password)
 
     if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
-        log "Error: Could not retrieve username or password from the secret."
+        log "Error: Missing username or password in secret."
         exit 1
     fi
 
-    log "Successfully retrieved credentials. Generating token..."
-    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+    log "Successfully retrieved credentials. Generating ingress token..."
+    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 --wrap=0)
+
+    if [ -z "$INGRESS_TOKEN" ]; then
+        log "Error: Failed to generate ingress token."
+        exit 1
+    fi
 
     log "Uploading OpenAPI schema file..."
     perform_request "POST" "/waf/openapi.openapischemafile" \
