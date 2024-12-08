@@ -9,7 +9,7 @@ spec:
     spec:
       containers:
         - name: check-cert
-          image: alpine/k8s:1.30.6
+          image: bitnami/kubectl:latest
           command:
             - /bin/sh
             - -c
