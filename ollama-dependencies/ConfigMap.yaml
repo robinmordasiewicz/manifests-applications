@@ -84,11 +84,11 @@ data:
         shift 2
 
         local url="${URL_PREFIX}${endpoint}"
-        local curl_command="curl --include --insecure --silent -H \"Authorization:$TOKEN\" -X \"$method\" -H 'Connection: keep-alive' \"$url\" $*"
+        local curl_command="curl --include --insecure --silent -H \"Authorization:$INGRESS_TOKEN\" -X \"$method\" -H 'Connection: keep-alive' \"$url\" $*"
         log "Executing curl command: $curl_command"
 
         local response=$(curl --include --insecure --silent \
-            -H "Authorization:$TOKEN" \
+            -H "Authorization:$INGRESS_TOKEN" \
             -X "$method" \
             -H 'Connection: keep-alive' \
             "$url" "$@" 2>&1)
@@ -112,7 +112,7 @@ data:
     fi
 
     log "Successfully retrieved credentials. Generating token..."
-    TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
 
     log "Uploading OpenAPI schema file..."
     perform_request "POST" "/waf/openapi.openapischemafile" \
