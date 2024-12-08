@@ -46,12 +46,12 @@ data:
 
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        retry_command kubectl version --request-timeout=5s
+        retry_command kubectl version --server=https://kubernetes.default.svc --request-timeout=5s
     }
 
     get_secret_value() {
         local field=$1
-        retry_command kubectl get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
+        retry_command kubectl --server=https://kubernetes.default.svc get secret fortiweb-login-secret -o jsonpath="{.data.$field}" | base64 -d
     }
 
     perform_request() {
