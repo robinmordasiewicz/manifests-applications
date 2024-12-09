@@ -97,15 +97,6 @@ spec:
                 -H 'Connection: keep-alive' \
                 --data-binary $'------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="type"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="uploadedFile"; filename="12396132896.crt"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n'"$CERT_CONTENT$"'\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n'
 
-
-              #curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
-              #  --insecure \
-              #  --include \
-              #  --silent \
-              #  -H "Authorization: $TOKEN" \
-              #  -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF" \
-              #  --data-raw "------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n" || error_exit "Failed to upload intermediate certificate." 
-
               log_info "Creating intermediate certificate group..."
               curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group" \
                 --insecure \
@@ -113,10 +104,10 @@ spec:
                 --silent \
                 -H "Authorization:$TOKEN" \
                 -H "Content-Type: application/json" \
-                --data-binary '{"data":{"name":"letsencrypt-ca-group"}}' || error_exit "Failed to create certificate group."
+                --data-binary '{"data":{"name":"docs_docs_ca-group"}}' || error_exit "Failed to create certificate group."
 
               log_info "Adding intermediate certificate to the group..."
-              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=letsencrypt-ca-group" \
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=docs_docs_ca-group" \
                 --insecure \
                 --include \
                 --silent \
