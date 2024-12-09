@@ -159,10 +159,21 @@ data:
     check_kubeapi_availability
 
     log "Fetching credentials from Kubernetes secret..."
-    USERNAME=$(get_secret_value username)
-    log "Debug: USERNAME retrieved. Length: ${#USERNAME}"
-    PASSWORD=$(get_secret_value password)
-    log "Debug: PASSWORD retrieved. Length: ${#PASSWORD}"
+
+    USERNAME=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.username}" | base64 -d)
+    PASSWORD=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.password}" | base64 -d)
+    if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+        echo "Error: Could not retrieve username or password from the secret."
+        exit 1
+    fi
+    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+             
+
+
+    #USERNAME=$(get_secret_value username)
+    #log "Debug: USERNAME retrieved. Length: ${#USERNAME}"
+    #PASSWORD=$(get_secret_value password)
+    #log "Debug: PASSWORD retrieved. Length: ${#PASSWORD}"
 
     if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
         log "Error: Missing username or password in secret."
@@ -172,7 +183,7 @@ data:
     log "Credentials retrieved: USERNAME and PASSWORD are set."
 
     log "Generating ingress token..."
-    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 -w 0 || echo "")
+    #INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 -w 0 || echo "")
     if [ -z "$INGRESS_TOKEN" ]; then
         INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 || echo "")
     fi
