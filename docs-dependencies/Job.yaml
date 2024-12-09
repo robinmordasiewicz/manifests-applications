@@ -1,4 +1,3 @@
----
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -9,7 +8,7 @@ spec:
     spec:
       containers:
         - name: check-cert
-          image: bitnami/kubectl:latest
+          image: ghcr.io/amerintlxperts/k8s-utilities:latest
           command:
             - /bin/sh
             - -c
@@ -18,11 +17,73 @@ spec:
               while true; do
                 if kubectl get secret docs-tls -n docs -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
                   echo "Certificate secret is ready."
-                  exit 0
+                  break
                 fi
                 echo "Waiting for certificate to be ready..."
                 sleep 5
               done
+
+              # Extract the certificate from the secret
+              kubectl get secret docs-tls -n docs -o jsonpath="{.data['tls\.crt']}" | base64 --decode > cert.pem
+
+              # Download the intermediate certificate
+              INTERMEDIATE_URL=$(openssl x509 -in cert.pem -noout -text | grep 'CA Issuers - URI:' | sed 's#.*URI:\(.*\)#\1#')
+              curl -o intermediate.crt "$INTERMEDIATE_URL"
+
+              # Normalize intermediate certificate to a single-line string
+              CERT_CONTENT=$(cat intermediate.crt | tr -d '\n' | tr -d '\r')
+
+              # Retrieve credentials
+              USERNAME=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.username}" | base64 -d)
+              PASSWORD=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.password}" | base64 -d)
+              if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+                echo "Error: Could not retrieve username or password from the secret."
+                exit 1
+              fi
+
+              TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
+
+              # Insert the single-line certificate content into the POST data
+              curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
+                --insecure \
+                -H "Authorization:$TOKEN" \
+                -k \
+                -H "Accept: application/json, text/plain, */*" \
+                -H "Accept-Language: en-US,en;q=0.9" \
+                -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF" \
+                --compressed \
+                --data-raw $"------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n"
+
+              # Create intermediate certificate group
+              curl 'https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group' \
+                --insecure \
+                -H "Authorization:$TOKEN" \
+                -k \
+                -X 'POST' \
+                -H 'Content-Type: application/json;charset=utf-8' \
+                -H 'Accept: application/json, text/plain, */*' \
+                -H 'Accept-Language: en-US,en;q=0.9' \
+                -H 'Accept-Encoding: gzip, deflate, br' \
+                -H 'Content-Length: 40' \
+                -H 'Connection: keep-alive' \
+                --data-binary '{"data":{"name":"letsencrypt-ca-group"}}'
+
+              # Add the intermediate certificate to the group
+              curl 'https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=letsencrypt-ca-group' \
+                --insecure \
+                -H "Authorization:$TOKEN" \
+                -k \
+                -X 'POST' \
+                -H 'Content-Type: application/json;charset=utf-8' \
+                -H 'Accept: application/json, text/plain, */*' \
+                -H 'Accept-Language: en-US,en;q=0.9' \
+                -H 'Accept-Encoding: gzip, deflate, br' \
+                -H 'Content-Length: 32' \
+                -H 'Connection: keep-alive' \
+                --data-binary '{"data":{"name":"Inter_Cert_1"}}'
+
+              # Keep the container running for debugging
+              sleep 100000
           resources:
             requests:
               cpu: 100m
