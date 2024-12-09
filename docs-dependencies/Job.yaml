@@ -85,6 +85,7 @@ spec:
                 --silent \
                 -X 'POST' \
                 --insecure \
+                -H "Authorization:$TOKEN" \
                 -H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF' \
                 -H 'Accept: application/json, text/plain, */*' \
                 -H 'Sec-Fetch-Site: same-origin' \
