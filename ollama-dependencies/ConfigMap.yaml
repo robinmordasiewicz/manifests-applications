@@ -88,6 +88,7 @@ data:
         while [ $attempt -lt $MAX_RETRIES ]; do
             log "Attempt $((attempt + 1)): Executing command: $*"
             if "$@"; then
+                log "Command succeeded on attempt $((attempt + 1))"
                 return 0
             fi
             exit_code=$?
@@ -105,10 +106,13 @@ data:
     #######################################
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        retry_command curl --include --insecure --silent --fail \
+        if ! retry_command curl --include --insecure --silent --fail \
             --cacert "$CA_CERT_PATH" \
             -H "Authorization: Bearer $TOKEN" \
-            "$KUBERNETES_API/version"
+            "$KUBERNETES_API/version"; then
+            log "Error: Kubernetes API is not reachable."
+            exit 1
+        fi
     }
 
     #######################################
@@ -117,22 +121,28 @@ data:
     get_secret_value() {
         local field=$1
         log "Retrieving secret value for field: $field"
+        log "Debug: Attempting to get secret 'fortiweb-login-secret' in namespace '$NAMESPACE' using kubectl..."
+        log "Debug: Using CA_CERT_PATH=$CA_CERT_PATH, TOKEN is set."
+        log "Debug: Running: kubectl --server=\"$KUBERNETES_API\" --token=\"<REDACTED>\" --certificate-authority=\"$CA_CERT_PATH\" get secret fortiweb-login-secret -o \"jsonpath={.data.${field}}\""
+        
         local secret_data
-
         secret_data=$(retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
             --certificate-authority="$CA_CERT_PATH" \
             get secret fortiweb-login-secret \
-            -o "jsonpath={.data.${field}}") || {
+            -o "jsonpath={.data.${field}}" 2>&1) || {
             log "Error: Failed to retrieve secret field: $field"
+            log "Debug: kubectl output: $secret_data"
             exit 1
         }
 
+        log "Debug: Raw secret data for field '$field': $secret_data"
         # Decode the base64 data
         if ! decoded_value=$(echo "$secret_data" | base64 -d 2>/dev/null); then
             log "Error: Failed to decode secret field: $field"
             exit 1
         fi
 
+        log "Debug: Decoded secret value for field '$field': (redacted)"
         echo "$decoded_value"
     }
 
@@ -150,7 +160,7 @@ data:
 
         local url="${URL_PREFIX}${endpoint}"
         log "Performing API request: $method $url"
-
+        log "Debug: curl --insecure --silent --show-error -H Authorization: <REDACTED> -X $method $url ..."
         local response
         response=$(curl --insecure --silent --show-error \
             -H "Authorization: $INGRESS_TOKEN" \
@@ -172,8 +182,18 @@ data:
 
     # Fetch credentials
     log "Fetching credentials from Kubernetes secret..."
+    # Additional debug: Try listing the secret first
+    log "Debug: Listing secrets in namespace '$NAMESPACE'..."
+    kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+        --certificate-authority="$CA_CERT_PATH" get secret -n "$NAMESPACE" || log "Debug: Failed to list secrets."
+
+    log "Debug: Attempting to retrieve 'username' from the secret..."
     USERNAME=$(get_secret_value username)
+    log "Debug: Username retrieved successfully."
+
+    log "Debug: Attempting to retrieve 'password' from the secret..."
     PASSWORD=$(get_secret_value password)
+    log "Debug: Password retrieved successfully."
 
     if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
         log "Error: Missing username or password in secret."
