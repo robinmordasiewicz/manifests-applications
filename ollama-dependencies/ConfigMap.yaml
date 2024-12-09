@@ -57,7 +57,14 @@ data:
     # Check if kubectl is available and functional
     #######################################
     log "Checking for kubectl binary..."
-    if ! command -v kubectl &>/dev/null; then
+    log "Current PATH: $PATH"
+    log "Looking up kubectl location with 'command -v kubectl'..."
+    if command -v kubectl &>/dev/null; then
+        KUBECTL_PATH="$(command -v kubectl)"
+        log "kubectl found at: $KUBECTL_PATH"
+        log "Listing kubectl details:"
+        ls -l "$KUBECTL_PATH" || log "Unable to list $KUBECTL_PATH"
+    else
         log "Error: kubectl command not found. Please ensure kubectl is installed."
         exit 1
     fi
@@ -65,6 +72,8 @@ data:
     log "Checking kubectl version..."
     if ! kubectl version --client >/dev/null 2>&1; then
         log "Error: kubectl is found but cannot retrieve version information. It may be corrupted or not functional."
+        log "Debug: Attempting 'kubectl version --client' directly:"
+        kubectl version --client || log "Failed to run 'kubectl version --client' for debugging."
         exit 1
     fi
     log "kubectl is installed and functional."
