@@ -79,13 +79,30 @@ spec:
               TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
 
               log_info "Uploading intermediate certificate..."
-              curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
+
+              curl 'https://10.0.0.4/api/v2.0/system/certificate.intermediateca' \
+                -X 'POST' \
                 --insecure \
-                --include \
-                --silent \
-                -H "Authorization: $TOKEN" \
-                -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF" \
-                --data-raw "------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n" || error_exit "Failed to upload intermediate certificate." 
+                -H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF' \
+                -H 'Accept: application/json, text/plain, */*' \
+                -H 'Sec-Fetch-Site: same-origin' \
+                -H 'Accept-Language: en-US,en;q=0.9' \
+                -H 'Accept-Encoding: gzip, deflate, br' \
+                -H 'Sec-Fetch-Mode: cors' \
+                -H 'Origin: https://10.0.0.4' \
+                -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15' \
+                -H 'Referer: https://10.0.0.4/root/system/inter-ca/inter-ca-import' \
+                -H 'Connection: keep-alive' \
+                --data-binary $'------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="type"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="uploadedFile"; filename="12396132896.crt"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n'$CERT_CONTENT$'\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n'
+
+
+              #curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
+              #  --insecure \
+              #  --include \
+              #  --silent \
+              #  -H "Authorization: $TOKEN" \
+              #  -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF" \
+              #  --data-raw "------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n" || error_exit "Failed to upload intermediate certificate." 
 
               log_info "Creating intermediate certificate group..."
               curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group" \
