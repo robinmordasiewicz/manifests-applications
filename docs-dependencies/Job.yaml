@@ -57,11 +57,7 @@ spec:
               curl --include --silent -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate."
 
               log_info "Converting intermediate certificate from DER to PEM format..."
-              # if ! openssl x509 -in "$INTERMEDIATE_CERT" -out "$INTERMEDIATE_CERT_PEM" -outform PEM > /dev/null 2>&1; then
-              #  error_exit "Downloaded file is not a valid DER certificate."
-              #fi
-
-              openssl x509 -in "$INTERMEDIATE_CERT" -inform DER -out "$INTERMEDIATE_CERT_PEM" -outform PEM || error_exit "Failed to convert intermediate certificate to PEM format."
+              openssl x509 -in  "$INTERMEDIATE_CERT" -out "$INTERMEDIATE_CERT_PEM" -outform PEM || error_exit "Failed to convert intermediate certificate to PEM format."
 
               log_info "Intermediate certificate successfully converted to PEM format: $INTERMEDIATE_CERT_PEM"
 
