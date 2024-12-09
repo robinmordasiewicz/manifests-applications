@@ -81,6 +81,8 @@ spec:
               log_info "Uploading intermediate certificate..."
 
               curl 'https://10.0.0.4/api/v2.0/system/certificate.intermediateca' \
+                --include \
+                --silent \
                 -X 'POST' \
                 --insecure \
                 -H 'Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF' \
