@@ -84,6 +84,8 @@ spec:
               # Insert the single-line certificate content into the POST data
               curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
                 --insecure \
+                --include \
+                --silent \
                 -H "Authorization:$TOKEN" \
                 -k \
                 -H "Accept: application/json, text/plain, */*" \
@@ -95,6 +97,8 @@ spec:
               # Create intermediate certificate group
               curl 'https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group' \
                 --insecure \
+                --include \
+                --silent \
                 -H "Authorization:$TOKEN" \
                 -k \
                 -X 'POST' \
@@ -109,6 +113,8 @@ spec:
               # Add the intermediate certificate to the group
               curl 'https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=letsencrypt-ca-group' \
                 --insecure \
+                --include \
+                --silent \
                 -H "Authorization:$TOKEN" \
                 -k \
                 -X 'POST' \
