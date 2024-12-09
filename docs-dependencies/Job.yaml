@@ -35,29 +35,29 @@ spec:
                 sleep 5
               done
 
-              CERT_FILE="cert.pem"
-              kubectl get secret docs-tls -n docs -o jsonpath="{.data['tls\.crt']}" | base64 --decode > "$CERT_FILE"
+              LETSENCRYPT_SIGNED_CERT="docs-tls.pem"
+              kubectl get secret docs-tls -n docs -o jsonpath="{.data['tls\.crt']}" | base64 --decode > "$LETSENCRYPT_SIGNED_CERT"
 
-              if [[ ! -f "$CERT_FILE" ]]; then
-                error_exit "Certificate file '$CERT_FILE' not found."
+              if [[ ! -f "$LETSENCRYPT_SIGNED_CERT" ]]; then
+                error_exit "Certificate file '$LETSENCRYPT_SIGNED_CERT' not found."
               fi
 
-              INTERMEDIATE_URL=$(openssl x509 -in "$CERT_FILE" -noout -text |
+              INTERMEDIATE_URL=$(openssl x509 -in "$LETSENCRYPT_SIGNED_CERT" -noout -text |
                 grep -m 1 'CA Issuers - URI:' |
                 sed 's#.*URI:\s*\(.*\)#\1#')
 
               if [[ -z "$INTERMEDIATE_URL" ]]; then
-                error_exit "Failed to extract INTERMEDIATE_URL from '$CERT_FILE'."
+                error_exit "Failed to extract INTERMEDIATE_URL from '$LETSENCRYPT_SIGNED_CERT'."
               fi
 
               log_info "Intermediate Certificate URL: $INTERMEDIATE_URL"
 
-              INTERMEDIATE_CERT="intermediate.crt"
+              INTERMEDIATE_CERT="intermediate.der"
               INTERMEDIATE_CERT_PEM="intermediate.pem"
-              curl --include --silent -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate."
+              curl --silent -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate."
 
               log_info "Converting intermediate certificate from DER to PEM format..."
-              openssl x509 -in  "$INTERMEDIATE_CERT" -out "$INTERMEDIATE_CERT_PEM" -outform PEM || error_exit "Failed to convert intermediate certificate to PEM format."
+              openssl x509 -in "$INTERMEDIATE_CERT" -out "$INTERMEDIATE_CERT_PEM" -outform PEM || error_exit "Failed to convert intermediate certificate to PEM format."
 
               log_info "Intermediate certificate successfully converted to PEM format: $INTERMEDIATE_CERT_PEM"
 
