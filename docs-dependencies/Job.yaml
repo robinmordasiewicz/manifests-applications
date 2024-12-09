@@ -13,120 +13,104 @@ spec:
             - /bin/bash
             - -c
             - |
-              echo "Checking if the certificate secret is populated..."
-              while true; do
-                if kubectl get secret docs-tls -n docs -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
-                  echo "Certificate secret is ready."
-                  break
-                fi
-                echo "Waiting for certificate to be ready..."
-                sleep 5
-              done
-
-              # Extract the certificate from the secret
-              kubectl get secret docs-tls -n docs -o jsonpath="{.data['tls\.crt']}" | base64 --decode > cert.pem
+              set -e
 
               error_exit() {
                   echo "Error: $1" >&2
                   exit 1
               }
 
-              # Check if cert.pem exists
+              log_info() {
+                  echo "Info: $1"
+              }
+
+              log_info "Checking if the certificate secret is populated..."
+              while true; do
+                if kubectl get secret docs-tls -n docs -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
+                  log_info "Certificate secret is ready."
+                  break
+                fi
+                log_info "Waiting for certificate to be ready..."
+                sleep 5
+              done
+
               CERT_FILE="cert.pem"
+              kubectl get secret docs-tls -n docs -o jsonpath="{.data['tls\.crt']}" | base64 --decode > "$CERT_FILE"
+
               if [[ ! -f "$CERT_FILE" ]]; then
                 error_exit "Certificate file '$CERT_FILE' not found."
               fi
 
-              # Extract the Intermediate Certificate URL from cert.pem
-              INTERMEDIATE_URL=$(openssl x509 -in "$CERT_FILE" -noout -text | \
-                grep -m 1 'CA Issuers - URI:' | \
+              INTERMEDIATE_URL=$(openssl x509 -in "$CERT_FILE" -noout -text |
+                grep -m 1 'CA Issuers - URI:' |
                 sed 's#.*URI:\s*\(.*\)#\1#')
 
-              # Verify that the INTERMEDIATE_URL was extracted
               if [[ -z "$INTERMEDIATE_URL" ]]; then
                 error_exit "Failed to extract INTERMEDIATE_URL from '$CERT_FILE'."
               fi
 
-              echo "Intermediate Certificate URL: $INTERMEDIATE_URL"
+              log_info "Intermediate Certificate URL: $INTERMEDIATE_URL"
 
-              # Download the intermediate certificate
               INTERMEDIATE_CERT="intermediate.crt"
-              curl -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate from '$INTERMEDIATE_URL'."
+              curl --include --silent -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate."
 
-              # Validate the downloaded certificate
-              if ! openssl x509 -in "$INTERMEDIATE_CERT" -noout > /dev/null 2>&1; then
-                error_exit "Downloaded file '$INTERMEDIATE_CERT' is not a valid certificate."
+              if ! openssl x509 -in "$INTERMEDIATE_CERT" -noout -inform DER > /dev/null 2>&1; then
+                error_exit "Downloaded file is not a valid DER certificate."
               fi
 
-              echo "Successfully downloaded and validated '$INTERMEDIATE_CERT'."
+              log_info "Converting intermediate certificate from DER to PEM format..."
+              INTERMEDIATE_CERT_PEM="intermediate.pem"
 
-              # Normalize the intermediate certificate to a single-line string
-              # Remove null bytes, newlines, and carriage returns
-              CERT_CONTENT=$(tr -d '\0\n\r' < "$INTERMEDIATE_CERT") || error_exit "Failed to process '$INTERMEDIATE_CERT'."
+              openssl x509 -in "$INTERMEDIATE_CERT" -inform DER -out "$INTERMEDIATE_CERT_PEM" -outform PEM || error_exit "Failed to convert intermediate certificate to PEM format."
 
-              # Optional: Verify that CERT_CONTENT is not empty
+              log_info "Intermediate certificate successfully converted to PEM format: $INTERMEDIATE_CERT_PEM"
+
+              CERT_CONTENT=$(tr -d '\0\n\r' < "$INTERMEDIATE_CERT_PEM") || error_exit "Failed to process intermediate certificate."
+
               if [[ -z "$CERT_CONTENT" ]]; then
                 error_exit "Normalized certificate content is empty."
               fi
 
-              echo $CERT_CONTENT
+              log_info "Certificate content ready."
 
-              # Retrieve credentials
               USERNAME=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.username}" | base64 -d)
               PASSWORD=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.password}" | base64 -d)
-              if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
-                echo "Error: Could not retrieve username or password from the secret."
-                exit 1
+
+              if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
+                error_exit "Could not retrieve username or password from the secret."
               fi
 
               TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
 
-              # Insert the single-line certificate content into the POST data
+              log_info "Uploading intermediate certificate..."
               curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
                 --insecure \
                 --include \
                 --silent \
                 -H "Authorization:$TOKEN" \
-                -k \
-                -H "Accept: application/json, text/plain, */*" \
-                -H "Accept-Language: en-US,en;q=0.9" \
                 -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF" \
-                --compressed \
-                --data-raw $"------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n"
+                --data-raw $"------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n" || error_exit "Failed to upload intermediate certificate."
 
-              # Create intermediate certificate group
-              curl 'https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group' \
+              log_info "Creating intermediate certificate group..."
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group" \
                 --insecure \
                 --include \
                 --silent \
                 -H "Authorization:$TOKEN" \
-                -k \
-                -X 'POST' \
-                -H 'Content-Type: application/json;charset=utf-8' \
-                -H 'Accept: application/json, text/plain, */*' \
-                -H 'Accept-Language: en-US,en;q=0.9' \
-                -H 'Accept-Encoding: gzip, deflate, br' \
-                -H 'Content-Length: 40' \
-                -H 'Connection: keep-alive' \
-                --data-binary '{"data":{"name":"letsencrypt-ca-group"}}'
+                -H "Content-Type: application/json" \
+                --data-binary '{"data":{"name":"letsencrypt-ca-group"}}' || error_exit "Failed to create certificate group."
 
-              # Add the intermediate certificate to the group
-              curl 'https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=letsencrypt-ca-group' \
+              log_info "Adding intermediate certificate to the group..."
+              curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=letsencrypt-ca-group" \
                 --insecure \
                 --include \
                 --silent \
                 -H "Authorization:$TOKEN" \
-                -k \
-                -X 'POST' \
-                -H 'Content-Type: application/json;charset=utf-8' \
-                -H 'Accept: application/json, text/plain, */*' \
-                -H 'Accept-Language: en-US,en;q=0.9' \
-                -H 'Accept-Encoding: gzip, deflate, br' \
-                -H 'Content-Length: 32' \
-                -H 'Connection: keep-alive' \
-                --data-binary '{"data":{"name":"Inter_Cert_1"}}'
+                -H "Content-Type: application/json" \
+                --data-binary '{"data":{"name":"Inter_Cert_1"}}' || error_exit "Failed to add certificate to the group."
 
-              # Keep the container running for debugging
+              log_info "Job completed successfully."
+
               sleep 100000
           resources:
             requests:
