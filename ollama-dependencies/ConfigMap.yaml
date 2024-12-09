@@ -6,16 +6,20 @@ metadata:
   namespace: ollama
 data:
   init-script.sh: |
-    #!/bin/bash
+    #!/usr/bin/env bash
     set -o errexit
     set -o nounset
 
+    #######################################
     # Logging function
+    #######################################
     log() {
         echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
     }
 
-    # Load environment variables
+    #######################################
+    # Load environment variables from /tmp/env_vars if present
+    #######################################
     log "Loading environment variables..."
     if [ -f /tmp/env_vars ]; then
         set -o allexport
@@ -25,16 +29,22 @@ data:
         log "Warning: /tmp/env_vars file not found. Proceeding without it."
     fi
 
-    # Constants
+    #######################################
+    # Constants and Configuration
+    #######################################
     MAX_RETRIES=30
     RETRY_DELAY=10
-    URL_PREFIX="https://10.0.0.4:443/api/v2.0"
+
+    FORTIWEB_HOST="https://10.0.0.4:443"
+    URL_PREFIX="${FORTIWEB_HOST}/api/v2.0"
     KUBERNETES_API="https://kubernetes.default.svc"
     TOKEN_PATH="/var/run/secrets/kubernetes.io/serviceaccount/token"
     CA_CERT_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     NAMESPACE_PATH="/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
-    # Validate Kubernetes Service Account credentials
+    #######################################
+    # Validate Kubernetes Service Account Credentials
+    #######################################
     log "Validating Kubernetes service account credentials..."
     if [ ! -f "$TOKEN_PATH" ] || [ ! -f "$CA_CERT_PATH" ]; then
         log "Error: Missing Kubernetes service account token or CA certificate."
@@ -44,17 +54,19 @@ data:
     TOKEN=$(cat "$TOKEN_PATH")
     NAMESPACE=$(cat "$NAMESPACE_PATH")
 
-    # Function to retry commands
+    #######################################
+    # Function to retry commands a set number of times
+    #######################################
     retry_command() {
         local attempt=0
         local exit_code=0
+        local cmd=("$@")
 
         until [ $attempt -ge $MAX_RETRIES ]; do
-            log "Attempt $((attempt + 1)): Executing command: $*"
-            if "$@"; then
+            log "Attempt $((attempt + 1)): Executing command: ${cmd[*]}"
+            if "${cmd[@]}"; then
                 return 0
             fi
-
             exit_code=$?
             log "Command failed with exit code $exit_code. Retrying in $RETRY_DELAY seconds..."
             attempt=$((attempt + 1))
@@ -65,50 +77,67 @@ data:
         return $exit_code
     }
 
+    #######################################
     # Check Kubernetes API availability
+    #######################################
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
-        retry_command curl --include --insecure --silent --fail --cacert "$CA_CERT_PATH" \
-            -H "Authorization: Bearer $TOKEN" "$KUBERNETES_API/version"
+        retry_command curl --include --insecure --silent --fail \
+            --cacert "$CA_CERT_PATH" \
+            -H "Authorization: Bearer $TOKEN" \
+            "$KUBERNETES_API/version"
     }
 
-    # Retrieve a secret field value
+    #######################################
+    # Retrieve a secret field value from Kubernetes
+    #######################################
     get_secret_value() {
         local field=$1
         log "Retrieving secret value for field: $field"
         retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
-            --certificate-authority="$CA_CERT_PATH" get secret fortiweb-login-secret \
+            --certificate-authority="$CA_CERT_PATH" \
+            get secret fortiweb-login-secret \
             -o jsonpath="{.data.$field}" | base64 -d || {
             log "Error: Failed to decode secret field: $field"
             exit 1
         }
     }
 
-    # Perform an API request with the ingress token
+    #######################################
+    # Perform an API request with the ingress token.
+    # Arguments:
+    #   $1 = HTTP Method (GET, POST, PUT, etc.)
+    #   $2 = Endpoint (path after URL_PREFIX)
+    #   Additional arguments are passed directly to curl.
+    #######################################
     perform_request() {
-        local method=$1
-        local endpoint=$2
+        local method="$1"
+        local endpoint="$2"
         shift 2
 
         local url="${URL_PREFIX}${endpoint}"
-        log "Performing API request to URL: $url with method: $method"
+        log "Performing API request: $method $url"
 
         local response
-        response=$(curl --include --insecure --silent \
+        response=$(curl --insecure --silent --show-error \
             -H "Authorization: $INGRESS_TOKEN" \
             -X "$method" "$url" "$@" 2>&1) || {
-            log "Error: API request failed. Response: $response"
+            log "Error: API request failed for $url. Response: $response"
             exit 1
         }
 
         echo "$response"
     }
 
+    #######################################
     # Main script logic
+    #######################################
     log "Starting initialization script..."
 
+    # Ensure Kubernetes API is available
     check_kubeapi_availability
 
+    # Fetch credentials
     log "Fetching credentials from Kubernetes secret..."
     USERNAME=$(get_secret_value username)
     PASSWORD=$(get_secret_value password)
@@ -118,62 +147,55 @@ data:
         exit 1
     fi
 
-    log "Successfully retrieved credentials. Generating ingress token..."
+    # Generate ingress token
+    log "Generating ingress token..."
     INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 -w 0)
-
     if [ -z "$INGRESS_TOKEN" ]; then
         log "Error: Failed to generate ingress token."
         exit 1
     fi
 
+    #######################################
+    # Upload OpenAPI schema file
+    #######################################
     log "Uploading OpenAPI schema file..."
+    curl --insecure -H "Authorization:$INGRESS_TOKEN" -H "Content-Type: multipart/form-data" \
+        -F 'openapifile=@/files/openapi.yaml' \
+        "${FORTIWEB_HOST}/api/v2.0/waf/openapi.openapischemafile" || {
+        log "Error uploading OpenAPI file"
+        exit 1
+    }
 
-    curl "https://10.0.0.4:443/api/v2.0/waf/openapi.openapischemafile" \
-      --insecure \
-      -H "Authorization:$INGRESS_TOKEN" \
-      -k \
-      -H "Content-Type: multipart/form-data" \
-      -H 'Connection: keep-alive' \
-      -F 'openapifile=@/files/openapi.yaml'
+    #######################################
+    # Create OpenAPI validation policy
+    #######################################
+    log "Creating OpenAPI validation policy..."
+    perform_request POST "/cmdb/waf/openapi-validation-policy" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy" \
-      --insecure \
-      -X 'POST' \
-      -H "Authorization:$INGRESS_TOKEN" \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Accept-Language: en-US,en;q=0.9' \
-      -H 'Sec-Fetch-Mode: cors' \
-      -H 'Accept-Encoding: gzip, deflate, br' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
+    #######################################
+    # Associate schema file with the validation policy
+    #######################################
+    log "Associating schema file with the validation policy..."
+    perform_request POST "/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"openapi-file":"openapi.yaml"}}'
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
-      --insecure \
-      -X 'POST' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H "Authorization:$INGRESS_TOKEN" \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"openapi-file":"openapi.yaml"}}'
+    #######################################
+    # Update the validation policy to finalize configuration
+    #######################################
+    log "Finalizing OpenAPI validation policy configuration..."
+    perform_request PUT "/cmdb/waf/openapi-validation-policy?mkey=ollama" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/openapi-validation-policy?mkey=ollama" \
-      --insecure \
-      -H "Authorization:$INGRESS_TOKEN" \
-      -X 'PUT' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Cache-Control: no-cache' \
-      -H 'Accept-Encoding: gzip, deflate, br' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
+    #######################################
+    # Create a web-protection profile that uses the new policy
+    #######################################
+    log "Creating web-protection profile using the new policy..."
+    perform_request POST "/cmdb/waf/web-protection-profile.inline-protection" \
+        -H 'Content-Type: application/json;charset=utf-8' \
+        --data-binary '{"data":{"name":"ollama","client-management":"enable","amf3-protocol-detection":"disable","mobile-app-identification":"disable","token-header":"Jwt-Token","ip-intelligence":"disable","fortigate-quarantined-ips":"disable","quarantined-ip-action":"alert","quarantined-ip-severity":"High","rdt-reason":"disable","openapi-validation-policy":"ollama"}}'
 
-    curl "https://10.0.0.4:443/api/v2.0/cmdb/waf/web-protection-profile.inline-protection" \
-      --insecure \
-      -H "Authorization:$INGRESS_TOKEN" \
-      -X 'POST' \
-      -H 'Content-Type: application/json;charset=utf-8' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Connection: keep-alive' \
-      --data-binary '{"data":{"name":"ollama","client-management":"enable","amf3-protocol-detection":"disable","mobile-app-identification":"disable","token-header":"Jwt-Token","ip-intelligence":"disable","fortigate-quarantined-ips":"disable","quarantined-ip-action":"alert","quarantined-ip-severity":"High","rdt-reason":"disable","openapi-validation-policy":"ollama"}}'
     log "Script completed successfully."
