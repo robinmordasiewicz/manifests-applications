@@ -26,12 +26,50 @@ spec:
               # Extract the certificate from the secret
               kubectl get secret docs-tls -n docs -o jsonpath="{.data['tls\.crt']}" | base64 --decode > cert.pem
 
-              # Download the intermediate certificate
-              INTERMEDIATE_URL=$(openssl x509 -in cert.pem -noout -text | grep 'CA Issuers - URI:' | sed 's#.*URI:\(.*\)#\1#')
-              curl -o intermediate.crt "$INTERMEDIATE_URL"
+              error_exit() {
+                  echo "Error: $1" >&2
+                  exit 1
+              }
 
-              # Normalize intermediate certificate to a single-line string
-              CERT_CONTENT=$(cat intermediate.crt | tr -d '\n' | tr -d '\r')
+              # Check if cert.pem exists
+              CERT_FILE="cert.pem"
+              if [[ ! -f "$CERT_FILE" ]]; then
+                error_exit "Certificate file '$CERT_FILE' not found."
+              fi
+
+              # Extract the Intermediate Certificate URL from cert.pem
+              INTERMEDIATE_URL=$(openssl x509 -in "$CERT_FILE" -noout -text | \
+                grep -m 1 'CA Issuers - URI:' | \
+                sed 's#.*URI:\s*\(.*\)#\1#')
+
+              # Verify that the INTERMEDIATE_URL was extracted
+              if [[ -z "$INTERMEDIATE_URL" ]]; then
+                error_exit "Failed to extract INTERMEDIATE_URL from '$CERT_FILE'."
+              fi
+
+              echo "Intermediate Certificate URL: $INTERMEDIATE_URL"
+
+              # Download the intermediate certificate
+              INTERMEDIATE_CERT="intermediate.crt"
+              curl -fSL -o "$INTERMEDIATE_CERT" "$INTERMEDIATE_URL" || error_exit "Failed to download intermediate certificate from '$INTERMEDIATE_URL'."
+
+              # Validate the downloaded certificate
+              if ! openssl x509 -in "$INTERMEDIATE_CERT" -noout > /dev/null 2>&1; then
+                error_exit "Downloaded file '$INTERMEDIATE_CERT' is not a valid certificate."
+              fi
+
+              echo "Successfully downloaded and validated '$INTERMEDIATE_CERT'."
+
+              # Normalize the intermediate certificate to a single-line string
+              # Remove null bytes, newlines, and carriage returns
+              CERT_CONTENT=$(tr -d '\0\n\r' < "$INTERMEDIATE_CERT") || error_exit "Failed to process '$INTERMEDIATE_CERT'."
+
+              # Optional: Verify that CERT_CONTENT is not empty
+              if [[ -z "$CERT_CONTENT" ]]; then
+                error_exit "Normalized certificate content is empty."
+              fi
+
+              echo $CERT_CONTENT
 
               # Retrieve credentials
               USERNAME=$(kubectl get secret fortiweb-login-secret -o jsonpath="{.data.username}" | base64 -d)
