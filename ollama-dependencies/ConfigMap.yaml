@@ -166,10 +166,7 @@ data:
         echo "Error: Could not retrieve username or password from the secret."
         exit 1
     fi
-    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
-             
-
-
+    
     #USERNAME=$(get_secret_value username)
     #log "Debug: USERNAME retrieved. Length: ${#USERNAME}"
     #PASSWORD=$(get_secret_value password)
@@ -183,6 +180,7 @@ data:
     log "Credentials retrieved: USERNAME and PASSWORD are set."
 
     log "Generating ingress token..."
+    INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
     #INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 -w 0 || echo "")
     if [ -z "$INGRESS_TOKEN" ]; then
         INGRESS_TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 || echo "")
