@@ -93,7 +93,7 @@ spec:
                 -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15' \
                 -H 'Referer: https://10.0.0.4/root/system/inter-ca/inter-ca-import' \
                 -H 'Connection: keep-alive' \
-                --data-binary $'------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="type"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="uploadedFile"; filename="12396132896.crt"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n'$CERT_CONTENT$'\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n'
+                --data-binary $'------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="type"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name="uploadedFile"; filename="12396132896.crt"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n'"$CERT_CONTENT$"'\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n'
 
 
               #curl -X POST "https://10.0.0.4/api/v2.0/system/certificate.intermediateca?mkey=letsencrypt" \
