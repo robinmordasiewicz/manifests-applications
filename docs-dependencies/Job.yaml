@@ -17,6 +17,7 @@ spec:
 
               error_exit() {
                   echo "Error: $1" >&2
+                  sleep 100000
                   exit 1
               }
 
