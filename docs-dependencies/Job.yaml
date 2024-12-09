@@ -83,9 +83,9 @@ spec:
                 --insecure \
                 --include \
                 --silent \
-                -H "Authorization:$TOKEN" \
+                -H "Authorization: $TOKEN" \
                 -H "Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryOB9vL7Qy4uR7B9wF" \
-                --data-raw $"------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n" || error_exit "Failed to upload intermediate certificate."
+                --data-raw "------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\nlocalPC\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF\r\nContent-Disposition: form-data; name=\"uploadedFile\"; filename=\"12396132896.crt\"\r\nContent-Type: application/x-x509-ca-cert\r\n\r\n$CERT_CONTENT\r\n------WebKitFormBoundaryOB9vL7Qy4uR7B9wF--\r\n" || error_exit "Failed to upload intermediate certificate." 
 
               log_info "Creating intermediate certificate group..."
               curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group" \
