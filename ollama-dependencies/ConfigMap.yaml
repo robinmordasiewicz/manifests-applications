@@ -9,24 +9,20 @@ data:
     set -o errexit
     set -o nounset
 
+    # Enable debugging if DEBUG_MODE is set to "true" in /tmp/env_vars
+    if [ -f /tmp/env_vars ]; then
+        . /tmp/env_vars
+    fi
+    if [ "${DEBUG_MODE:-false}" = "true" ]; then
+        set -x
+    fi
+
     #######################################
     # Logging function
     #######################################
     log() {
         echo "$(date +"%Y-%m-%d %H:%M:%S") - $1"
     }
-
-    #######################################
-    # Load environment variables from /tmp/env_vars if present
-    #######################################
-    log "Loading environment variables..."
-    if [ -f /tmp/env_vars ]; then
-        set -o allexport
-        . /tmp/env_vars
-        set +o allexport
-    else
-        log "Warning: /tmp/env_vars file not found. Proceeding without it."
-    fi
 
     #######################################
     # Constants and Configuration
@@ -41,9 +37,15 @@ data:
     CA_CERT_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     NAMESPACE_PATH="/var/run/secrets/kubernetes.io/serviceaccount/namespace"
 
-    #######################################
-    # Validate Kubernetes Service Account Credentials
-    #######################################
+    log "Loading environment variables..."
+    if [ -f /tmp/env_vars ]; then
+        set -o allexport
+        . /tmp/env_vars
+        set +o allexport
+    else
+        log "Warning: /tmp/env_vars file not found. Proceeding without it."
+    fi
+
     log "Validating Kubernetes service account credentials..."
     if [ ! -f "$TOKEN_PATH" ] || [ ! -f "$CA_CERT_PATH" ]; then
         log "Error: Missing Kubernetes service account token or CA certificate."
@@ -53,16 +55,11 @@ data:
     TOKEN=$(cat "$TOKEN_PATH")
     NAMESPACE=$(cat "$NAMESPACE_PATH")
 
-    #######################################
-    # Check if kubectl is available and functional
-    #######################################
     log "Checking for kubectl binary..."
     log "Current PATH: $PATH"
-    log "Looking up kubectl location with 'command -v kubectl'..."
     if command -v kubectl &>/dev/null; then
         KUBECTL_PATH="$(command -v kubectl)"
         log "kubectl found at: $KUBECTL_PATH"
-        log "Listing kubectl details:"
         ls -l "$KUBECTL_PATH" || log "Unable to list $KUBECTL_PATH"
     else
         log "Error: kubectl command not found. Please ensure kubectl is installed."
@@ -73,7 +70,7 @@ data:
     if ! kubectl version --client >/dev/null 2>&1; then
         log "Error: kubectl is found but cannot retrieve version information. It may be corrupted or not functional."
         log "Debug: Attempting 'kubectl version --client' directly:"
-        kubectl version --client || log "Failed to run 'kubectl version --client' for debugging."
+        kubectl version --client || log "Failed to run 'kubectl version --client'"
         exit 1
     fi
     log "kubectl is installed and functional."
@@ -84,10 +81,12 @@ data:
     retry_command() {
         local attempt=0
         local exit_code=0
+        local cmd=("$@")
 
+        log "Will attempt command up to $MAX_RETRIES times: ${cmd[*]}"
         while [ $attempt -lt $MAX_RETRIES ]; do
-            log "Attempt $((attempt + 1)): Executing command: $*"
-            if "$@"; then
+            log "Attempt $((attempt + 1)): Executing command: ${cmd[*]}"
+            if "${cmd[@]}"; then
                 log "Command succeeded on attempt $((attempt + 1))"
                 return 0
             fi
@@ -101,9 +100,6 @@ data:
         return $exit_code
     }
 
-    #######################################
-    # Check Kubernetes API availability
-    #######################################
     check_kubeapi_availability() {
         log "Checking Kubernetes API availability..."
         if ! retry_command curl --include --insecure --silent --fail \
@@ -115,19 +111,21 @@ data:
         fi
     }
 
-    #######################################
-    # Retrieve a secret field value from Kubernetes
-    #######################################
     get_secret_value() {
         local field=$1
         log "Retrieving secret value for field: $field"
-        log "Debug: Attempting to get secret 'fortiweb-login-secret' in namespace '$NAMESPACE' using kubectl..."
-        log "Debug: Using CA_CERT_PATH=$CA_CERT_PATH, TOKEN is set."
-        log "Debug: Running: kubectl --server=\"$KUBERNETES_API\" --token=\"<REDACTED>\" --certificate-authority=\"$CA_CERT_PATH\" get secret fortiweb-login-secret -o \"jsonpath={.data.${field}}\""
-        
+        log "Debug: Before attempting, listing all secrets in namespace '$NAMESPACE' to ensure secret exists..."
+        kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+            --certificate-authority="$CA_CERT_PATH" -n "$NAMESPACE" get secrets || log "Debug: Failed to list secrets."
+
+        log "Debug: Describing 'fortiweb-login-secret' to ensure fields are present..."
+        kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
+            --certificate-authority="$CA_CERT_PATH" -n "$NAMESPACE" describe secret fortiweb-login-secret || log "Debug: Failed to describe secret."
+
+        log "Debug: Attempting to retrieve field '$field' from the secret now..."
         local secret_data
         secret_data=$(retry_command kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
-            --certificate-authority="$CA_CERT_PATH" \
+            --certificate-authority="$CA_CERT_PATH" -n "$NAMESPACE" \
             get secret fortiweb-login-secret \
             -o "jsonpath={.data.${field}}" 2>&1) || {
             log "Error: Failed to retrieve secret field: $field"
@@ -135,24 +133,21 @@ data:
             exit 1
         }
 
-        log "Debug: Raw secret data for field '$field': $secret_data"
-        # Decode the base64 data
+        log "Debug: Raw base64 data for field '$field' is length: ${#secret_data}"
+        if [ -z "$secret_data" ]; then
+            log "Error: Secret field '$field' is empty or not found."
+            exit 1
+        fi
+
+        local decoded_value
         if ! decoded_value=$(echo "$secret_data" | base64 -d 2>/dev/null); then
             log "Error: Failed to decode secret field: $field"
             exit 1
         fi
-
-        log "Debug: Decoded secret value for field '$field': (redacted)"
+        log "Debug: Successfully decoded secret field '$field'. (Value redacted)"
         echo "$decoded_value"
     }
 
-    #######################################
-    # Perform an API request with the ingress token.
-    # Arguments:
-    #   $1 = HTTP Method (GET, POST, PUT, etc.)
-    #   $2 = Endpoint (path after URL_PREFIX)
-    #   Additional arguments are passed directly to curl.
-    #######################################
     perform_request() {
         local method="$1"
         local endpoint="$2"
@@ -160,7 +155,6 @@ data:
 
         local url="${URL_PREFIX}${endpoint}"
         log "Performing API request: $method $url"
-        log "Debug: curl --insecure --silent --show-error -H Authorization: <REDACTED> -X $method $url ..."
         local response
         response=$(curl --insecure --silent --show-error \
             -H "Authorization: $INGRESS_TOKEN" \
@@ -172,28 +166,20 @@ data:
         echo "$response"
     }
 
-    #######################################
-    # Main script logic
-    #######################################
     log "Starting initialization script..."
 
     # Ensure Kubernetes API is available
     check_kubeapi_availability
 
-    # Fetch credentials
     log "Fetching credentials from Kubernetes secret..."
-    # Additional debug: Try listing the secret first
-    log "Debug: Listing secrets in namespace '$NAMESPACE'..."
-    kubectl --server="$KUBERNETES_API" --token="$TOKEN" \
-        --certificate-authority="$CA_CERT_PATH" get secret -n "$NAMESPACE" || log "Debug: Failed to list secrets."
 
-    log "Debug: Attempting to retrieve 'username' from the secret..."
+    # Attempt to retrieve username
     USERNAME=$(get_secret_value username)
-    log "Debug: Username retrieved successfully."
+    log "Debug: USERNAME retrieved. Length: ${#USERNAME}"
 
-    log "Debug: Attempting to retrieve 'password' from the secret..."
+    # Attempt to retrieve password
     PASSWORD=$(get_secret_value password)
-    log "Debug: Password retrieved successfully."
+    log "Debug: PASSWORD retrieved. Length: ${#PASSWORD}"
 
     if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
         log "Error: Missing username or password in secret."
@@ -216,9 +202,6 @@ data:
     fi
     log "Ingress token generated successfully."
 
-    #######################################
-    # Upload OpenAPI schema file
-    #######################################
     log "Uploading OpenAPI schema file..."
     if ! curl --insecure -H "Authorization:$INGRESS_TOKEN" -H "Content-Type: multipart/form-data" \
         -F 'openapifile=@/files/openapi.yaml' \
@@ -228,36 +211,24 @@ data:
     fi
     log "OpenAPI schema file uploaded."
 
-    #######################################
-    # Create OpenAPI validation policy
-    #######################################
     log "Creating OpenAPI validation policy..."
     perform_request POST "/cmdb/waf/openapi-validation-policy" \
         -H 'Content-Type: application/json;charset=utf-8' \
         --data-binary '{"data":{"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":-1}}'
     log "OpenAPI validation policy created."
 
-    #######################################
-    # Associate schema file with the validation policy
-    #######################################
     log "Associating schema file with the validation policy..."
     perform_request POST "/cmdb/waf/openapi-validation-policy/schema-file?mkey=ollama" \
         -H 'Content-Type: application/json;charset=utf-8' \
         --data-binary '{"data":{"openapi-file":"openapi.yaml"}}'
     log "Schema file associated with the validation policy."
 
-    #######################################
-    # Update the validation policy to finalize configuration
-    #######################################
     log "Finalizing OpenAPI validation policy configuration..."
     perform_request PUT "/cmdb/waf/openapi-validation-policy?mkey=ollama" \
         -H 'Content-Type: application/json;charset=utf-8' \
         --data-binary '{"data":{"can_view":0,"q_ref":0,"can_clone":1,"q_type":1,"name":"ollama","action":"alert","action_val":"2","block-period":600,"severity":"Low","severity_val":"3","trigger":"","trigger_val":"0","sz_schema-file":0}}'
     log "OpenAPI validation policy configuration finalized."
 
-    #######################################
-    # Create a web-protection profile that uses the new policy
-    #######################################
     log "Creating web-protection profile using the new policy..."
     perform_request POST "/cmdb/waf/web-protection-profile.inline-protection" \
         -H 'Content-Type: application/json;charset=utf-8' \
