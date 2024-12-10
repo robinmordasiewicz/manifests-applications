@@ -109,7 +109,7 @@ spec:
                 -H "Content-Type: application/json" \
                 --data-binary '{"data":{"name":"docs_docs_ca-group"}}' || error_exit "Failed to create certificate group."
 
-              log_info "Adding intermediate certificate to the group..."
+              log_info "Adding intermediate certificate $INTERMEDIATE_CERT_ID to the group docs_docs_ca-group"
               curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group/members?mkey=docs_docs_ca-group" \
                 --insecure \
                 --include \
