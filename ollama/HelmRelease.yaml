@@ -40,7 +40,6 @@ spec:
     ollama:
       gpu:
         enabled: true
-      mountPath: "/"
       models:
         pull:
           - nomic-embed-text
@@ -49,9 +48,9 @@ spec:
           - gemma2:9b
           - starcoder2:3b
           - starcoder2:7b
-    # persistentVolume:
-    #   enabled: true
-    #   size: 50Gi
+    persistentVolume:
+      enabled: true
+      size: 100Gi
     tolerations:
       - key: "nvidia.com/gpu"
         operator: "Equal"
