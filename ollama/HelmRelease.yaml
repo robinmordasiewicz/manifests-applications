@@ -48,6 +48,7 @@ spec:
           - gemma2:9b
           - starcoder2:3b
           - starcoder2:7b
+          - qwen2.5-coder:7b
     persistentVolume:
       enabled: true
       size: 100Gi
