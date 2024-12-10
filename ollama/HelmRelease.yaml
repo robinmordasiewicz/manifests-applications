@@ -72,7 +72,7 @@ spec:
         server-policy-https-service: "HTTPS",
         server-policy-http-service: "HTTP",
         server-policy-syn-cookie: "enable",
-        server-policy-intermediate-certificate-group: "letsencrypt-ca-group",
+        server-policy-intermediate-certificate-group: "ollama_ollama_ca-group",
         server-policy-http-to-https: "enable"
       }
       tls:
