@@ -17,7 +17,7 @@ spec:
             - -c
             - |
               env > /tmp/env_vars
-              sh /scripts/init-script.sh
+              /scripts/init-script.sh
               echo "Checking if the certificate secret is populated..."
               while true; do
                 if kubectl get secret ollama-tls -n ollama -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
