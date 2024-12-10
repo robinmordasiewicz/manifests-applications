@@ -80,7 +80,7 @@ spec:
               log_info "Uploading intermediate certificate..."
               cat "$INTERMEDIATE_CERT_PEM"
               # Run the curl command and capture the response
-              curl 'https://10.0.0.4/api/v2.0/system/certificate.intermediateca' \
+              response=$(curl 'https://10.0.0.4/api/v2.0/system/certificate.intermediateca' \
                            --verbose \
                            --silent \
                            --insecure \
@@ -96,9 +96,7 @@ spec:
                            -H 'Referer: https://10.0.0.4/root/system/inter-ca/inter-ca-import' \
                            -H 'Connection: keep-alive' \
                            -F 'type=localPC' \
-                           -F "uploadedFile=@$INTERMEDIATE_CERT_PEM;filename=12396132896.crt;type=application/x-x509-ca-cert" > results.txt
-              cat results.txt
-              sleep 100000
+                           -F "uploadedFile=@$INTERMEDIATE_CERT_PEM;filename=12396132896.crt;type=application/x-x509-ca-cert")
 
               # Parse the _id value from the JSON response
               _id=$(echo "$response" | jq -r '._id')
