@@ -100,7 +100,7 @@ spec:
               _id=$(echo "$response" | jq -r '._id')
               INTERMEDIATE_CERT_ID="$_id"
 
-              log_info "Creating intermediate certificate group..."
+              log_info "Creating intermediate certificate group."
               curl -X POST "https://10.0.0.4/api/v2.0/cmdb/system/certificate.intermediate-certificate-group" \
                 --insecure \
                 --include \
@@ -116,7 +116,7 @@ spec:
                 --silent \
                 -H "Authorization:$TOKEN" \
                 -H "Content-Type: application/json" \
-                --data-binary '{"data":{"name":"$INTERMEDIATE_CERT_ID"}}' || error_exit "Failed to add certificate to the group."
+                --data-binary "{\"data\":{\"name\":\"$INTERMEDIATE_CERT_ID\"}}" || error_exit "Failed to add certificate to the group."
 
               log_info "Job completed successfully."
 
