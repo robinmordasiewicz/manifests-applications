@@ -13,7 +13,7 @@ spec:
             - /bin/bash
             - -c
             - |
-              set -e
+              set -x
 
               error_exit() {
                   echo "Error: $1" >&2
