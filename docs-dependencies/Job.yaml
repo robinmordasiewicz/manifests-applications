@@ -17,7 +17,6 @@ spec:
 
               error_exit() {
                   echo "Error: $1" >&2
-                  sleep 100000
                   exit 1
               }
 
@@ -121,7 +120,6 @@ spec:
 
               log_info "Job completed successfully."
 
-              sleep 100000
           resources:
             requests:
               cpu: 100m
