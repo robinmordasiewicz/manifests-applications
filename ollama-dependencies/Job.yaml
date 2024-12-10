@@ -19,13 +19,16 @@ spec:
               env > /tmp/env_vars
               /scripts/init-script.sh
               echo "Checking if the certificate secret is populated..."
-              while true; do
+              certificate_ready=false
+
+              while [ "$certificate_ready" = false ]; do
                 if kubectl get secret ollama-tls -n ollama -o jsonpath='{.data.tls\.crt}' | base64 -d | grep -q 'BEGIN CERTIFICATE'; then
                   echo "Certificate secret is ready."
-                  exit 0
+                  certificate_ready=true
+                else
+                  echo "Waiting for certificate to be ready..."
+                  sleep 5
                 fi
-                echo "Waiting for certificate to be ready..."
-                sleep 5
               done
               error_exit() {
                   echo "Error: $1" >&2
