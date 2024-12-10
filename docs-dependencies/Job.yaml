@@ -78,8 +78,10 @@ spec:
               TOKEN=$(echo "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"vdom\":\"root\"}" | base64 | tr -d "\\n")
 
               log_info "Uploading intermediate certificate..."
+              cat "$INTERMEDIATE_CERT_PEM"
               # Run the curl command and capture the response
               curl 'https://10.0.0.4/api/v2.0/system/certificate.intermediateca' \
+                           --verbose \
                            --silent \
                            --insecure \
                            -X 'POST' \
