@@ -15,7 +15,7 @@ permissions:
   contents: write
 jobs:
   docs-version:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
 
       - name: Checkout Repo
