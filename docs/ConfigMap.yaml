@@ -50,8 +50,13 @@ data:
             try_files $uri =404;
         }
 
+        # Allow unrestricted access to /docs.html
+        location = /docs.html {
+            try_files $uri =404;
+        }
+
         # Authentication for all other routes except allowed paths
-        location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|agenda)(.*) {
+        location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|agenda|docs\.html)(.*) {
             auth_basic "Restricted";
             auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
