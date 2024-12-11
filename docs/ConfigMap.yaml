@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginxconfigmap
-  namespace: hands-on-labs
+  namespace: docs
 data:
   default.conf: |
     server {
