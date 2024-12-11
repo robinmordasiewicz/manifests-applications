@@ -64,8 +64,21 @@ data:
             try_files $uri $uri/ =404;
         }
 
+        # Allow unrestricted access to /speakers.html
+        location = /speakers.html {
+            try_files $uri =404;
+        }
+
+        # Allow unrestricted access to HealthCheck HEAD /
+        location = / {
+            if ($request_method = HEAD) {
+                return 200;
+            }
+            try_files $uri $uri/ =404;
+        }
+
         # Authentication for all other routes
-        location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|agenda|hands-on-labs\.html|references)(.*) {
+        location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|agenda|hands-on-labs\.html|speakers\.html|references)(.*) {
             auth_basic "Restricted";
             auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
