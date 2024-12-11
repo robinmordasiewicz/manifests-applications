@@ -6,6 +6,12 @@ metadata:
 spec:
   template:
     spec:
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+          effect: "NoSchedule"
+      nodeSelector:
+        system-pool: "true"
       containers:
         - name: check-cert
           image: ghcr.io/amerintlxperts/k8s-utilities:latest
