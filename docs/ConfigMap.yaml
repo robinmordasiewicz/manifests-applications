@@ -12,17 +12,25 @@ data:
         access_log /dev/stdout combined;
         error_log /dev/stderr warn;
         root /www/;
+        
+        # Error pages
         error_page 404 /404.html;
         error_page 500 502 503 504 /50x.html;
+
+        # Security headers
         add_header X-Content-Type-Options nosniff;
 
-        # Allow unrestricted access to root and index.html
+        # Serve root and index.html without restrictions
         location ~ ^/(|index.html)$ {
             try_files $uri $uri/ =404;
         }
+
+        # Serve specific file types
         location ~* \.(css|js|ico|png)$ {
             try_files $uri =404;
         }
+
+        # Search endpoint with caching
         location /search {
             try_files $uri $uri/ =404;
         }
@@ -30,6 +38,8 @@ data:
             add_header Cache-Control "max-age=3600";
             add_header Surrogate-Control "max-age=3600";
         }
+
+        # Serve additional directories
         location /assets {
             try_files $uri $uri/ =404;
         }
@@ -40,33 +50,28 @@ data:
             try_files $uri $uri/ =404;
         }
 
-        # Allow unrestricted access to apple-touch-icon files
+        # Allow specific unrestricted files
         location ~ ^/apple-touch-icon(-precomposed)?\.png$ {
             try_files $uri =404;
         }
-
-        # Allow unrestricted access to specific GIF
         location = /Xperts1450x900.gif {
             try_files $uri =404;
         }
-
-        # Allow unrestricted access to /hands-on-labs.html
         location = /hands-on-labs.html {
             try_files $uri =404;
         }
-
-        # Allow unrestricted access to /references
         location /references {
             try_files $uri $uri/ =404;
         }
 
-        # Authentication for all other routes except allowed paths
+        # Authentication for all other routes
         location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|agenda|hands-on-labs\.html|references)(.*) {
             auth_basic "Restricted";
             auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
         }
 
+        # 50x error page
         location = /50x.html {
             root /usr/share/nginx/html;
         }
