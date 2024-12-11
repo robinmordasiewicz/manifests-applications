@@ -45,6 +45,11 @@ data:
             try_files $uri =404;
         }
 
+        # Allow unrestricted access to specific GIF
+        location = /Xperts1450x900.gif {
+            try_files $uri =404;
+        }
+
         # Authentication for all other routes except allowed paths
         location ~ ^/(?!assets|search|theme|extra\.css|favicon\.ico|agenda)(.*) {
             auth_basic "Restricted";
