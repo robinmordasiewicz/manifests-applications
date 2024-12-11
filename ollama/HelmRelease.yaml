@@ -57,8 +57,6 @@ spec:
         operator: "Equal"
         value: "true"
         effect: "NoSchedule"
-      - key: "CriticalAddonsOnly"
-        operator: "Exists"
     ingress:
       enabled: true
       className: "fwb-ingress-controller"
