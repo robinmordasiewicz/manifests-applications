@@ -26,10 +26,8 @@ data:
             try_files $uri $uri/ =404;
         }
 
-        # Serve root and index.html with restrictions
-        location ~ ^/(|index.html)$ {
-            auth_basic "Restricted";
-            auth_basic_user_file /etc/nginx/.htpasswd;
+        # Allow unrestricted access to root path
+        location = / {
             try_files $uri $uri/ =404;
         }
 
@@ -42,13 +40,30 @@ data:
             add_header Surrogate-Control "max-age=3600";
         }
 
-        # Allow unrestricted access to / (for HealthCheck)
+        # Allow specific unrestricted files
+        location ~ ^/apple-touch-icon(-precomposed)?\.png$ {
+            try_files $uri =404;
+        }
+        location = /Xperts1450x900.gif {
+            try_files $uri =404;
+        }
+        location = /hands-on-labs.html {
+            try_files $uri =404;
+        }
+        location /references {
+            try_files $uri $uri/ =404;
+        }
+
+        # Allow unrestricted access to /speakers.html
+        location = /speakers.html {
+            try_files $uri =404;
+        }
+
+        # Allow unrestricted access to HealthCheck HEAD /
         location = / {
             if ($request_method = HEAD) {
                 return 200;
             }
-            auth_basic "Restricted";
-            auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
         }
 
