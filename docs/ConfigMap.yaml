@@ -1,4 +1,3 @@
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -21,7 +20,7 @@ data:
         # Security headers
         add_header X-Content-Type-Options nosniff;
 
-        # Allow unrestricted access to all paths except /ot, /cloud, /sase, /secops
+        # Allow unrestricted access to all paths
         location / {
             # Security headers
             add_header X-Content-Type-Options nosniff;
@@ -35,8 +34,8 @@ data:
             try_files $uri $uri/ =404;
         }
 
-        # Authentication for specific paths
-        location ~ ^/(ot|cloud|sase|secops)(.*) {
+        # Authentication for specific paths (only /sase, /ot, /cloud, and /secops)
+        location ~* ^(sase|ot|cloud|secops)(.*) {
             auth_basic "Restricted";
             auth_basic_user_file /etc/nginx/.htpasswd;
             try_files $uri $uri/ =404;
