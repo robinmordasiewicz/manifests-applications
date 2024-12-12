@@ -33,10 +33,25 @@ spec:
         nvidia.com/gpu: "1"
     image:
       tag: "latest"
+    tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: "system-pool"
+                  operator: "NotIn"
+                  values:
+                    - "true"
     nodeSelector:
       accelerator: nvidia
       agentpool: gpu
       nvidia.com/gpu.present: "true"
+      nvidia.com/gpu: "true"
     ollama:
       gpu:
         enabled: true
