@@ -1,11 +1,11 @@
-name: docs-version
+name: pretix-version
 on:
   push:
     paths:
-      - 'docs/**'
-      - 'docs-dependencies/**'
+      - 'pretix/**'
+      - 'pretix-dependencies/**'
   repository_dispatch:
-    types: [docs-version]
+    types: [pretix-version]
   workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}
