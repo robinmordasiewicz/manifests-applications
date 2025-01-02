@@ -67,11 +67,6 @@ spec:
     persistentVolume:
       enabled: true
       size: 100Gi
-    tolerations:
-      - key: "nvidia.com/gpu"
-        operator: "Equal"
-        value: "true"
-        effect: "NoSchedule"
     ingress:
       enabled: true
       className: "fwb-ingress-controller"

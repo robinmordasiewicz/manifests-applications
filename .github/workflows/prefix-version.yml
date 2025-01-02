@@ -1,3 +1,4 @@
+---
 name: pretix-version
 on:
   push:
@@ -33,7 +34,7 @@ jobs:
           export DOMAIN_NAME="${{ vars.PRETIX_FQDN }}"
           envsubst < pretix-dependencies/certificate.yaml > pretix-dependencies/certificate.processed.yaml
           mv pretix-dependencies/certificate.processed.yaml pretix-dependencies/certificate.yaml
-  
+
       - name: Commit and Push Changes
         run: |
           git add .
