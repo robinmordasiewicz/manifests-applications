@@ -9,8 +9,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: docs
-  minReplicas: 1
-  maxReplicas: 10
+  minReplicas: 3  # Set to the number of available nodes to ensure each node has at least one pod
+  maxReplicas: 30  # Maximum pods across the cluster
   metrics:
     - type: Resource
       resource:
