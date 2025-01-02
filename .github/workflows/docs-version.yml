@@ -1,7 +1,12 @@
-name: update-manifest
+---
+name: docs-version
 on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'docs-dependencies/**'
   repository_dispatch:
-    types: [update-manifest]
+    types: [docs-version]
   workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}
@@ -10,7 +15,7 @@ permissions:
   id-token: write
   contents: write
 jobs:
-  update-manifest:
+  docs-version:
     runs-on: ubuntu-latest
     steps:
 
@@ -24,22 +29,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-  #    - name: Process VERSION
-  #      run: |
-  #        PAYLOAD='${{ toJson(github.event.client_payload) }}'
-  #        FILE=$(echo "$PAYLOAD" | jq -r '.file')
-  #        NAME=$(echo "$PAYLOAD" | jq -r '.name')
-  #        SPEC=$(echo "$PAYLOAD" | jq -r '.spec')
-  #        TYPE=$(echo "$PAYLOAD" | jq -r '.type')
-  #        VALUE=$(echo "$PAYLOAD" | jq -r '.value')
-  #        yq eval -i "${SPEC} = \"${VALUE}\"" "${NAME}/${FILE}"
-
       - name: Process fqdn
         run: |
           export DOMAIN_NAME="${{ vars.DOCS_FQDN }}"
-          envsubst < docs/certificate.yaml > docs/certificate.processed.yaml
+          envsubst < docs-dependencies/certificate.yaml > docs-dependencies/certificate.processed.yaml
+          mv docs-dependencies/certificate.processed.yaml docs-dependencies/certificate.yaml
           envsubst < docs/Ingress.yaml > docs/Ingress.processed.yaml
-          mv docs/certificate.processed.yaml docs/certificate.yaml
           mv docs/Ingress.processed.yaml docs/Ingress.yaml
           yq eval -i ".spec.template.spec.containers[0].image = \"${{ secrets.ACR_LOGIN_SERVER }}/docs:${{ vars.DOCS_VERSION }}\"" "docs/Deployment.yaml"
 

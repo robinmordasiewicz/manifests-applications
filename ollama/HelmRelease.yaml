@@ -1,5 +1,5 @@
 ---
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: ollama
@@ -33,35 +33,47 @@ spec:
         nvidia.com/gpu: "1"
     image:
       tag: "latest"
-    nodeSelector:
-      accelerator: nvidia
-      agentpool: gpu
-      nvidia.com/gpu.present: "true"
-    ollama:
-      gpu:
-        enabled: true
-      models:
-        - nomic-embed-text
-        - llama3.2:3b
-    persistentVolume:
-      enabled: true
-      size: 50Gi
-    service:
-      type: NodePort
     tolerations:
       - key: "nvidia.com/gpu"
         operator: "Equal"
         value: "true"
         effect: "NoSchedule"
-      - key: "CriticalAddonsOnly"
-        operator: "Exists"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: "system-pool"
+                  operator: "NotIn"
+                  values:
+                    - "true"
+    nodeSelector:
+      accelerator: nvidia
+      agentpool: gpu
+      nvidia.com/gpu.present: "true"
+      nvidia.com/gpu: "true"
+    ollama:
+      gpu:
+        enabled: true
+      models:
+        pull:
+          - nomic-embed-text
+          - llama3.2:3b
+          - llama3.1:8b
+          - gemma2:9b
+          - starcoder2:3b
+          - starcoder2:7b
+          - qwen2.5-coder:7b
+    persistentVolume:
+      enabled: true
+      size: 100Gi
     ingress:
       enabled: true
       className: "fwb-ingress-controller"
       annotations: {
         fortiweb-ip: "10.0.0.4",
         fortiweb-login: "fortiweb-login-secret",
-        fortiweb-port: "8443",
+        fortiweb-port: "443",
         virtual-server-ip: "10.0.0.7",
         virtual-server-addr-type: "ipv4",
         virtual-server-interface: "port1",
@@ -69,27 +81,20 @@ spec:
         server-policy-https-service: "HTTPS",
         server-policy-http-service: "HTTP",
         server-policy-syn-cookie: "enable",
-        server-policy-http-to-https: "disable"
+        server-policy-intermediate-certificate-group: "ollama_ollama_ca-group",
+        server-policy-http-to-https: "enable"
       }
+      tls:
+        - secretName: ollama-tls
+          hosts:
+            - "$DOMAIN_NAME"
       hosts:
-        - host: "ollama.amerintlxperts.com"
+        - host: "$DOMAIN_NAME"
           paths:
             - path: /
               pathType: Prefix
-    initContainers:
-      - name: init-script-runner
-        image: alpine/k8s:1.30.6
-        command: ["/bin/sh", "-c", "sh /scripts/init-script.sh"]
-        volumeMounts:
-          - name: ollama-init-script-volume
-            mountPath: /scripts
-          - name: openapifile-volume
-            mountPath: /files
-    volumes:
-      - name: ollama-init-script-volume
-        configMap:
-          name: ollama-init-script-configmap
-          defaultMode: 0755
-      - name: openapifile-volume
-        configMap:
-          name: openapifile-configmap
+    service:
+      type: NodePort
+      annotations: {
+        "health-check-ctrl": "HLTHCK_HTTP"
+      }
