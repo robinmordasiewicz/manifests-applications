@@ -7,3 +7,4 @@ resources:
   - rbac.yaml
   - Service.yaml
   - Ingress.yaml
+  - HorizontalPodAutoscaler.yaml

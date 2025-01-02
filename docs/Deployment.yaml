@@ -15,6 +15,13 @@ spec:
       labels:
         app: docs
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: docs
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: docs
           image: nginxinc/nginx-unprivileged:latest
