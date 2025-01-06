@@ -11,7 +11,7 @@ data:
       server_name _;
       port_in_redirect off;
       access_log /dev/stdout combined;
-      error_log /dev/stderr warn;
+      error_log /dev/stdout info;
       root /www/;
 
       # Error pages
