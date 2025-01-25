@@ -38,15 +38,6 @@ spec:
         operator: "Equal"
         value: "true"
         effect: "NoSchedule"
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: "nvidia.com/gpu.present"
-                  operator: "In"
-                  values:
-                    - "true"
     nodeSelector:
       accelerator: nvidia
       agentpool: gpu
