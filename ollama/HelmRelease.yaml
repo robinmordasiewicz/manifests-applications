@@ -43,8 +43,8 @@ spec:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-                - key: "system-pool"
-                  operator: "NotIn"
+                - key: "nvidia.com/gpu.present"
+                  operator: "In"
                   values:
                     - "true"
     nodeSelector:
