@@ -38,6 +38,14 @@ jobs:
           mv docs/Ingress.processed.yaml docs/Ingress.yaml
           yq eval -i ".spec.template.spec.containers[0].image = \"${{ secrets.ACR_LOGIN_SERVER }}/docs:${{ vars.DOCS_VERSION }}\"" "docs/Deployment.yaml"
 
+      - name: Process production variables
+        if: env.PRODUCTION_ENVIRONMENT == 'false'
+        run: |
+          sed -i '/HorizontalPodAutoscaler/Id' docs/kustomization.yaml
+          yq eval -i ".spec.replicas = 1" "docs/Deployment.yaml"
+        env:
+          PRODUCTION_ENVIRONMENT: ${{ vars.PRODUCTION_ENVIRONMENT }}
+
       - name: Commit and Push Changes
         run: |
           git add .

@@ -7,15 +7,15 @@ metadata:
   annotations:
     reloader.stakater.com/auto: "true"
 spec:
-  replicas: 3  # Start with multiple replicas for zero-downtime upgrades
+  replicas: 3
   selector:
     matchLabels:
       app: docs
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0  # Ensure no downtime by keeping all pods available
-      maxSurge: 1  # Add one additional pod during upgrades
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
