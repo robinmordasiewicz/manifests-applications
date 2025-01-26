@@ -42,7 +42,6 @@ spec:
       accelerator: nvidia
       agentpool: gpu
       nvidia.com/gpu.present: "true"
-      nvidia.com/gpu: "true"
     ollama:
       gpu:
         enabled: true
