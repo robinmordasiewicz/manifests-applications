@@ -43,6 +43,7 @@ jobs:
         run: |
           sed -i '/HorizontalPodAutoscaler/Id' docs/kustomization.yaml
           yq eval -i ".spec.replicas = 1" "docs/Deployment.yaml"
+          yq eval -i 'del(.spec.template.spec.affinity)' "docs/Deployment.yaml"
         env:
           PRODUCTION_ENVIRONMENT: ${{ vars.PRODUCTION_ENVIRONMENT }}
 
