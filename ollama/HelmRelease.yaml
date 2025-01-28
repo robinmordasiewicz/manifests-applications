@@ -74,9 +74,9 @@ spec:
       tls:
         - secretName: ollama-tls
           hosts:
-            - "$DOMAIN_NAME"
+            - "ollama.robinmordasiewicz.amerintlxperts.com"
       hosts:
-        - host: "$DOMAIN_NAME"
+        - host: "ollama.robinmordasiewicz.amerintlxperts.com"
           paths:
             - path: /
               pathType: Prefix

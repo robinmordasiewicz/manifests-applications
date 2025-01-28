@@ -8,9 +8,9 @@ spec:
   secretName: ollama-tls
   privateKey:
     rotationPolicy: Always
-  commonName: $DOMAIN_NAME
+  commonName: ollama.robinmordasiewicz.amerintlxperts.com
   dnsNames:
-    - $DOMAIN_NAME
+    - ollama.robinmordasiewicz.amerintlxperts.com
   usages:
     - digital signature
     - key encipherment
