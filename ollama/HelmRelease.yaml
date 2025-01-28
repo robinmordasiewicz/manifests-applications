@@ -54,6 +54,7 @@ spec:
           - starcoder2:3b
           - starcoder2:7b
           - qwen2.5-coder:7b
+          - deepseek-r1:32b
     persistentVolume:
       enabled: true
       size: 100Gi
